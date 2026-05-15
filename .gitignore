@@ -1,0 +1,30 @@
+# Datos procesados (pesados, no van al repo)
+data/*.parquet
+data/*.csv
+models/*.pkl
+models/*.json
+
+# Entorno Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Variables de entorno
+.env
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
