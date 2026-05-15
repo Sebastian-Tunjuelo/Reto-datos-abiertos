@@ -1,30 +1,99 @@
+# ---------------------------------------------------------------------------
 # Datos procesados (pesados, no van al repo)
+# ---------------------------------------------------------------------------
 data/*.parquet
 data/*.csv
-models/*.pkl
-models/*.json
+data/*.db
+data/*.duckdb
+data/*.json
+# Excepción: mantener el placeholder
+!data/.gitkeep
 
-# Entorno Python
+# Modelos entrenados
+models/*.pkl
+models/*.joblib
+models/*.json
+models/*.ubj
+!models/.gitkeep
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
+.Python
+*.so
+
+# Entornos virtuales
 .venv/
 venv/
 env/
+ENV/
+.env.local
+
+# Distribución / empaquetado
 *.egg-info/
+dist/
+build/
+*.egg
+MANIFEST
 
-# Variables de entorno
+# Testing y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# mypy / ruff / linters
+.mypy_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------------------
+# Variables de entorno — NUNCA al repo
+# ---------------------------------------------------------------------------
 .env
+.env.*
+!.env.example
 
-# Node / Next.js
+# ---------------------------------------------------------------------------
+# Node / Next.js (frontend)
+# ---------------------------------------------------------------------------
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
+# ---------------------------------------------------------------------------
+# Docker
+# ---------------------------------------------------------------------------
+postgres_data/
+
+# ---------------------------------------------------------------------------
 # IDE
+# ---------------------------------------------------------------------------
 .vscode/
 .idea/
+*.swp
+*.swo
 
+# ---------------------------------------------------------------------------
 # OS
+# ---------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Reportes generados (PDFs, outputs temporales)
+# ---------------------------------------------------------------------------
+*.pdf
+reports/
