@@ -15,10 +15,10 @@ EVA registra por municipio, cultivo y año: área sembrada, área cosechada, pro
 
 | ID | Archivo | Qué hace | Depende de | Estado |
 |----|---------|----------|------------|--------|
-| D1.1 | [D1.1_historica.md](D1.1_historica.md) | Descarga y limpia EVA 2007-2018 | — | 🔲 Pendiente |
-| D1.2 | [D1.2_reciente.md](D1.2_reciente.md) | Descarga y limpia EVA 2019-2024 | — | 🔲 Pendiente |
-| D1.3 | [D1.3_unificacion.md](D1.3_unificacion.md) | Merge, validación y guardado Parquet | D1.1 + D1.2 | 🔲 Pendiente |
-| D1.4 | [D1.4_validacion.md](D1.4_validacion.md) | Script de aceptación y resumen | D1.3 | 🔲 Pendiente |
+| D1.1 | [D1.1_historica.md](D1.1_historica.md) | Descarga y limpia EVA 2007-2018 | — | ✅ Completo |
+| D1.2 | [D1.2_reciente.md](D1.2_reciente.md) | Descarga y limpia EVA 2019-2024 | — | ✅ Completo |
+| D1.3 | [D1.3_unificacion.md](D1.3_unificacion.md) | Merge, validación y guardado Parquet | D1.1 + D1.2 | ✅ Completo |
+| D1.4 | [D1.4_validacion.md](D1.4_validacion.md) | Script de aceptación y resumen | D1.3 | ✅ Completo |
 
 > D1.1 y D1.2 son **independientes entre sí** — se pueden ejecutar en paralelo.
 
