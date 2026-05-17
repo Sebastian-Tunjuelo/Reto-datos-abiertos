@@ -12,9 +12,9 @@ A diferencia de los pipelines D2 y D3, este dataset es pequeño (~200 registros)
 
 | ID | Archivo | Qué hace | Depende de | Estado |
 |----|---------|----------|------------|--------|
-| D4.1 | [D4.1_descarga_limpieza.md](D4.1_descarga_limpieza.md) | Descarga el índice completo y limpia columnas | — | 🔲 Pendiente |
-| D4.2 | [D4.2_agregacion_anual.md](D4.2_agregacion_anual.md) | Agrega a nivel anual y calcula percentiles históricos | D4.1 | 🔲 Pendiente |
-| D4.3 | [D4.3_validacion.md](D4.3_validacion.md) | Script de validación de los 2 Parquets | D4.2 | 🔲 Pendiente |
+| D4.1 | [D4.1_descarga_limpieza.md](D4.1_descarga_limpieza.md) | Descarga el índice completo y limpia columnas | — | ✅ Completo |
+| D4.2 | [D4.2_agregacion_anual.md](D4.2_agregacion_anual.md) | Agrega a nivel anual y calcula percentiles históricos | D4.1 | ✅ Completo |
+| D4.3 | [D4.3_validacion.md](D4.3_validacion.md) | Script de validación de los 2 Parquets | D4.2 | ✅ Completo |
 
 > D4.1 y D4.2 son secuenciales. D4.3 valida el output final.
 
@@ -65,14 +65,14 @@ A diferencia de los pipelines D2 y D3, este dataset es pequeño (~200 registros)
 | Columna API | Columna unificada | Notas |
 |-------------|-------------------|-------|
 | `fecha` | `fecha` | string, formato variable (ver D4.1) |
-| `ndice_general` | `indice_total` | string numérico |
-| `fertilizantes` | `fertilizantes` | string numérico |
-| `plaguicidas` | `plaguicidas` | string numérico |
-| `urea` | `urea` | string numérico |
-| `dap` | `dap` | string numérico |
-| `kcl` | `kcl` | string numérico |
+| `indice_total` | `indice_total` | string numérico |
+| `total_fertilizantes` | `fertilizantes` | string numérico |
+| `total_plaguicidas` | `plaguicidas` | string numérico |
+| `urea_46` | `urea` | string numérico |
+| `dap_18_46` | `dap` | string numérico |
+| `kcl_0_0_60` | `kcl` | string numérico |
 
-> ⚠️ El nombre de la columna en la API es `ndice_general` (sin la `í` inicial — error tipográfico en el dataset original). Verificar con una llamada de prueba antes de implementar.
+> ⚠️ Verificar con una llamada de prueba antes de implementar. La API puede cambiar los nombres.
 
 ## Dependencias compartidas
 | Módulo | Uso |

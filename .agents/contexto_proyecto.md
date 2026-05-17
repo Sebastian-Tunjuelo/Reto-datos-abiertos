@@ -227,6 +227,15 @@ COLUMNAS_EVA = [
 | D1.2 | `specs/D1_pipeline_eva/D1.2_reciente.md` | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_reciente()` |
 | D1.3 | `specs/D1_pipeline_eva/D1.3_unificacion.md` | ✅ Completo | `modules/agricultural/ingestion.py → run_pipeline()` |
 | D1.4 | `specs/D1_pipeline_eva/D1.4_validacion.md` | ✅ Completo | `scripts/validate_d1.py` |
+| D2.1 | `specs/D2_pipeline_clima/D2.1_estaciones.md` | ✅ Completo | `modules/climate/ingestion.py → download_catalogo_estaciones()` |
+| D2.2 | `specs/D2_pipeline_clima/D2.2_precipitacion.md` | ✅ Completo | `modules/climate/ingestion.py → download_precipitacion()` |
+| D2.3 | `specs/D2_pipeline_clima/D2.3_temperatura_humedad.md` | ✅ Completo | `modules/climate/ingestion.py → download_temperatura() + download_humedad()` |
+| D2.4 | `specs/D2_pipeline_clima/D2.4_anomalias_guardado.md` | ✅ Completo | `modules/climate/aggregation.py → calcular_anomalias()` + `modules/climate/ingestion.py → run_pipeline()` |
+| D2.5 | `specs/D2_pipeline_clima/D2.5_validacion.md` | ✅ Completo | `specs/D2_pipeline_clima/validate_d2.py → run_validations()` |
+| D3.1 | `specs/D3_pipeline_territorial/D3.1_aptitud_cafe_cacao.md` | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_cafe() + download_aptitud_cacao()` |
+| D3.2 | `specs/D3_pipeline_territorial/D3.2_aptitud_maiz.md` | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_maiz()` |
+| D3.3 | `specs/D3_pipeline_territorial/D3.3_frontera.md` | ✅ Completo | `modules/territorial/ingestion.py → download_frontera()` |
+| D3.4 | `specs/D3_pipeline_territorial/D3.4_validacion.md` | ✅ Completo | `specs/D3_pipeline_territorial/validate_d3.py → run_validations()` |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -303,8 +312,11 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `shared/socrata_client.py` | ✅ Completo |
 | `modules/agricultural/__init__.py` | ✅ (vacío) |
 | `modules/agricultural/ingestion.py` | ✅ D1.1 completo (D1.2, D1.3 pendientes) |
-| `modules/climate/` | 🔲 Por implementar |
-| `modules/territorial/` | 🔲 Por implementar |
+| `modules/climate/__init__.py` | ✅ Expone `download_catalogo_estaciones`, `download_precipitacion`, `download_temperatura`, `download_humedad`, `run_pipeline`, `load_clima_agregado`, `calcular_anomalias` |
+| `modules/climate/ingestion.py` | ✅ D2.1, D2.2, D2.3, D2.4 completos |
+| `modules/climate/aggregation.py` | ✅ D2.4 completo — `calcular_anomalias()` |
+| `modules/territorial/__init__.py` | ✅ Expone `download_aptitud_cafe`, `download_aptitud_cacao`, `download_aptitud_maiz`, `download_frontera` |
+| `modules/territorial/ingestion.py` | ✅ D3.1 completo — `download_aptitud_cafe()` + `download_aptitud_cacao()` / ✅ D3.2 completo — `download_aptitud_maiz()` / ✅ D3.3 completo — `download_frontera()` |
 | `modules/economic/` | 🔲 Por implementar |
 | `modules/predictive/` | 🔲 Por implementar |
 | `modules/explainability/` | 🔲 Por implementar |
