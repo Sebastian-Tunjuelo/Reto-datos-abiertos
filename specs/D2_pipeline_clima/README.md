@@ -12,9 +12,9 @@ La relación entre estaciones y municipios no es directa: una estación tiene co
 
 | ID | Archivo | Qué hace | Depende de | Estado |
 |----|---------|----------|------------|--------|
-| D2.1 | [D2.1_estaciones.md](D2.1_estaciones.md) | Descarga catálogo de estaciones IDEAM para los 15 municipios | — | 🔲 Pendiente |
-| D2.2 | [D2.2_precipitacion.md](D2.2_precipitacion.md) | Descarga precipitación agregada por municipio y año | D2.1 | 🔲 Pendiente |
-| D2.3 | [D2.3_temperatura_humedad.md](D2.3_temperatura_humedad.md) | Descarga temperatura y humedad agregadas por municipio y año | D2.1 | 🔲 Pendiente |
+| D2.1 | [D2.1_estaciones.md](D2.1_estaciones.md) | Descarga catálogo de estaciones IDEAM para los 15 municipios | — | ✅ Completo |
+| D2.2 | [D2.2_precipitacion.md](D2.2_precipitacion.md) | Descarga precipitación agregada por municipio y año | D2.1 | ✅ Completo |
+| D2.3 | [D2.3_temperatura_humedad.md](D2.3_temperatura_humedad.md) | Descarga temperatura y humedad agregadas por municipio y año | D2.1 | ✅ Completo |
 | D2.4 | [D2.4_anomalias_guardado.md](D2.4_anomalias_guardado.md) | Calcula anomalías, une variables y guarda Parquet | D2.2 + D2.3 | 🔲 Pendiente |
 | D2.5 | [D2.5_validacion.md](D2.5_validacion.md) | Script de aceptación y resumen | D2.4 | 🔲 Pendiente |
 

@@ -53,7 +53,7 @@ def fetch(
 
     for attempt, wait in enumerate(RETRY_BACKOFF, 1):
         try:
-            resp = requests.get(url, params=params, headers=_get_headers(), timeout=30)
+            resp = requests.get(url, params=params, headers=_get_headers(), timeout=120)
             resp.raise_for_status()
             data = resp.json()
             logger.debug(
