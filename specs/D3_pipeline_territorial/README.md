@@ -14,10 +14,10 @@ Para maíz existen 3 datasets complementarios: maíz tradicional (`frjn-92um`), 
 
 | ID | Archivo | Qué hace | Depende de | Estado |
 |----|---------|----------|------------|--------|
-| D3.1 | [D3.1_aptitud_cafe_cacao.md](D3.1_aptitud_cafe_cacao.md) | Descarga aptitud café (`kwvf-nwea`) y cacao (`jdjx-qer4`) | — | 🔲 Pendiente |
-| D3.2 | [D3.2_aptitud_maiz.md](D3.2_aptitud_maiz.md) | Descarga y consolida aptitud maíz (3 datasets UPRA) | — | 🔲 Pendiente |
-| D3.3 | [D3.3_frontera.md](D3.3_frontera.md) | Descarga frontera agrícola (`fyc7-sbtz`) | — | 🔲 Pendiente |
-| D3.4 | [D3.4_validacion.md](D3.4_validacion.md) | Script de validación de los 4 Parquets | D3.1 + D3.2 + D3.3 | 🔲 Pendiente |
+| D3.1 | [D3.1_aptitud_cafe_cacao.md](D3.1_aptitud_cafe_cacao.md) | Descarga aptitud café (`kwvf-nwea`) y cacao (`jdjx-qer4`) | — | ✅ Completo |
+| D3.2 | [D3.2_aptitud_maiz.md](D3.2_aptitud_maiz.md) | Descarga y consolida aptitud maíz (3 datasets UPRA) | — | ✅ Completo |
+| D3.3 | [D3.3_frontera.md](D3.3_frontera.md) | Descarga frontera agrícola (`fyc7-sbtz`) | — | ✅ Completo |
+| D3.4 | [D3.4_validacion.md](D3.4_validacion.md) | Script de validación de los 4 Parquets | D3.1 + D3.2 + D3.3 | ✅ Completo |
 
 > D3.1, D3.2 y D3.3 son **independientes entre sí** — se pueden ejecutar en paralelo.
 

@@ -232,6 +232,10 @@ COLUMNAS_EVA = [
 | D2.3 | `specs/D2_pipeline_clima/D2.3_temperatura_humedad.md` | ✅ Completo | `modules/climate/ingestion.py → download_temperatura() + download_humedad()` |
 | D2.4 | `specs/D2_pipeline_clima/D2.4_anomalias_guardado.md` | ✅ Completo | `modules/climate/aggregation.py → calcular_anomalias()` + `modules/climate/ingestion.py → run_pipeline()` |
 | D2.5 | `specs/D2_pipeline_clima/D2.5_validacion.md` | ✅ Completo | `specs/D2_pipeline_clima/validate_d2.py → run_validations()` |
+| D3.1 | `specs/D3_pipeline_territorial/D3.1_aptitud_cafe_cacao.md` | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_cafe() + download_aptitud_cacao()` |
+| D3.2 | `specs/D3_pipeline_territorial/D3.2_aptitud_maiz.md` | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_maiz()` |
+| D3.3 | `specs/D3_pipeline_territorial/D3.3_frontera.md` | ✅ Completo | `modules/territorial/ingestion.py → download_frontera()` |
+| D3.4 | `specs/D3_pipeline_territorial/D3.4_validacion.md` | ✅ Completo | `specs/D3_pipeline_territorial/validate_d3.py → run_validations()` |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -311,7 +315,8 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/climate/__init__.py` | ✅ Expone `download_catalogo_estaciones`, `download_precipitacion`, `download_temperatura`, `download_humedad`, `run_pipeline`, `load_clima_agregado`, `calcular_anomalias` |
 | `modules/climate/ingestion.py` | ✅ D2.1, D2.2, D2.3, D2.4 completos |
 | `modules/climate/aggregation.py` | ✅ D2.4 completo — `calcular_anomalias()` |
-| `modules/territorial/` | 🔲 Por implementar |
+| `modules/territorial/__init__.py` | ✅ Expone `download_aptitud_cafe`, `download_aptitud_cacao`, `download_aptitud_maiz`, `download_frontera` |
+| `modules/territorial/ingestion.py` | ✅ D3.1 completo — `download_aptitud_cafe()` + `download_aptitud_cacao()` / ✅ D3.2 completo — `download_aptitud_maiz()` / ✅ D3.3 completo — `download_frontera()` |
 | `modules/economic/` | 🔲 Por implementar |
 | `modules/predictive/` | 🔲 Por implementar |
 | `modules/explainability/` | 🔲 Por implementar |
