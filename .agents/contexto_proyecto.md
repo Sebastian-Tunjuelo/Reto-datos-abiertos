@@ -46,7 +46,7 @@ Definidos en `shared/dane_codes.py → MVP_CODIGOS`. **No redefinirlos en otros 
 
 | Capa | Herramientas |
 |------|-------------|
-| Datos / Backend | Python 3.11, pandas 2.1.4, duckdb 0.9.2, pyarrow 14.0.2 |
+| Datos / Backend | Python 3.10, pandas 2.1.4, duckdb 0.9.2, pyarrow 14.0.2 |
 | Modelo | xgboost 2.0.3, scikit-learn 1.3.2, shap 0.44.0 |
 | API | FastAPI 0.109.0, uvicorn, pydantic 2.5.3 |
 | Base de datos | PostgreSQL 15, SQLAlchemy 2.0.25 |
@@ -178,6 +178,17 @@ fetch_all(dataset_id, select, where, group, order, page_size) → list[dict]
 | Índice agroinsumos | `gwbi-fnzs` | ~200 registros, descargar completo |
 | Precios RAP Eje Cafetero | `gdqq-rry2` | 4 ciudades |
 
+### Agroinsumos (gwbi-fnzs) — columnas reales
+| Columna API | Columna unificada |
+|-------------|-------------------|
+| `fecha` | `fecha` |
+| `indice_total` | `indice_total` |
+| `total_fertilizantes` | `fertilizantes` |
+| `total_plaguicidas` | `plaguicidas` |
+| `urea_46` | `urea` |
+| `dap_18_46` | `dap` |
+| `kcl_0_0_60` | `kcl` |
+
 ---
 
 ## Esquema unificado EVA (compartido por todos los pipelines)
@@ -214,7 +225,8 @@ COLUMNAS_EVA = [
 | `aptitud_cacao.parquet` | mismo esquema |
 | `aptitud_maiz.parquet` | mismo esquema (unión 3 datasets UPRA) |
 | `frontera.parquet` | `codigo_dane, municipio, pct_condicionada, pct_no_condicionada` |
-| `agroinsumos.parquet` | `fecha, año, mes, indice_total, fertilizantes, plaguicidas, urea, dap, kcl` |
+| `agroinsumos_mensual.parquet` | `fecha, año, mes, indice_total, fertilizantes, plaguicidas, urea, dap, kcl` |
+| `agroinsumos.parquet` | `año, indice_total, fertilizantes, plaguicidas, urea, dap, kcl, n_meses, pct_fertilizantes, pct_indice_total, señal_riesgo` |
 | `tabla_maestra.parquet` | todos los anteriores cruzados por `codigo_dane + cultivo + año` |
 
 ---
@@ -236,6 +248,13 @@ COLUMNAS_EVA = [
 | D3.2 | `specs/D3_pipeline_territorial/D3.2_aptitud_maiz.md` | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_maiz()` |
 | D3.3 | `specs/D3_pipeline_territorial/D3.3_frontera.md` | ✅ Completo | `modules/territorial/ingestion.py → download_frontera()` |
 | D3.4 | `specs/D3_pipeline_territorial/D3.4_validacion.md` | ✅ Completo | `specs/D3_pipeline_territorial/validate_d3.py → run_validations()` |
+| D4.1 | `specs/D4_pipeline_economico/D4.1_descarga_limpieza.md` | ✅ Completo | `modules/economic/ingestion.py → download_agroinsumos()` |
+| D4.2 | `specs/D4_pipeline_economico/D4.2_agregacion_anual.md` | ✅ Completo | `modules/economic/ingestion.py → build_agroinsumos_anual()` + `run_pipeline()` |
+| D4.3 | `specs/D4_pipeline_economico/D4.3_validacion.md` | ✅ Completo | `specs/D4_pipeline_economico/validate_d4.py → run_validations()` |
+| D5.1 | `specs/D5_tabla_maestra/D5.1_carga_validacion_inputs.md` | ✅ Completo | `modules/predictive/feature_builder.py → load_inputs()` |
+| D5.2 | `specs/D5_tabla_maestra/D5.2_features_eva.md` | ✅ Completo | `modules/predictive/feature_builder.py → build_eva_features()` |
+| D5.3 | `specs/D5_tabla_maestra/D5.3_cruce_features.md` | ✅ Completo | `modules/predictive/feature_builder.py → build_tabla_maestra()` + `load_tabla_maestra()` |
+| D5.4 | `specs/D5_tabla_maestra/D5.4_validacion.md` | ✅ Completo | `specs/D5_tabla_maestra/validate_d5.py → run_validations()` |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -264,6 +283,21 @@ logger = logging.getLogger(__name__)
 - Municipio sin datos: `logger.warning("[D1.x] Sin datos para {municipio} en ...")` — no fallar
 - Rendimiento fuera de rango: → `None`, no eliminar la fila, loggear
 - DataFrame vacío tras filtros: lanzar `ValueError` con mensaje descriptivo
+
+### Variables de entorno para muestreo IDEAM (modo rápido)
+Para acelerar descargas climáticas en pruebas:
+
+```bash
+IDEAM_ESTACIONES_POR_MUN=1  # selecciona N estaciones por municipio
+IDEAM_MAX_ESTACIONES=50     # límite global alternativo (si no se usa por municipio)
+IDEAM_YEAR_START=2023
+IDEAM_YEAR_END=2024
+IDEAM_YEAR_CHUNK=1
+SOCRATA_TIMEOUT=300
+SOCRATA_MAX_RETRIES=5
+```
+
+> Usar solo para pruebas; reduce cobertura climática.
 
 ### Validación temporal — regla estricta
 ```python
@@ -311,14 +345,14 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `shared/normalization.py` | ✅ Completo |
 | `shared/socrata_client.py` | ✅ Completo |
 | `modules/agricultural/__init__.py` | ✅ (vacío) |
-| `modules/agricultural/ingestion.py` | ✅ D1.1 completo (D1.2, D1.3 pendientes) |
+| `modules/agricultural/ingestion.py` | ✅ D1.1–D1.3 completos |
 | `modules/climate/__init__.py` | ✅ Expone `download_catalogo_estaciones`, `download_precipitacion`, `download_temperatura`, `download_humedad`, `run_pipeline`, `load_clima_agregado`, `calcular_anomalias` |
 | `modules/climate/ingestion.py` | ✅ D2.1, D2.2, D2.3, D2.4 completos |
 | `modules/climate/aggregation.py` | ✅ D2.4 completo — `calcular_anomalias()` |
 | `modules/territorial/__init__.py` | ✅ Expone `download_aptitud_cafe`, `download_aptitud_cacao`, `download_aptitud_maiz`, `download_frontera` |
 | `modules/territorial/ingestion.py` | ✅ D3.1 completo — `download_aptitud_cafe()` + `download_aptitud_cacao()` / ✅ D3.2 completo — `download_aptitud_maiz()` / ✅ D3.3 completo — `download_frontera()` |
-| `modules/economic/` | 🔲 Por implementar |
-| `modules/predictive/` | 🔲 Por implementar |
+| `modules/economic/` | ✅ D4.1–D4.3 completos (ingestion + validacion) |
+| `modules/predictive/` | ✅ D5.1–D5.4 completos |
 | `modules/explainability/` | 🔲 Por implementar |
 | `modules/conversational/` | 🔲 Por implementar |
 | `orchestrator/` | 🔲 Por implementar |

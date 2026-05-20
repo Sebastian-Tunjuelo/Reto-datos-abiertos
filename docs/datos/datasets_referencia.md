@@ -91,14 +91,27 @@ $where=cultivo IN ('Café','Cacao','Maíz') AND c_digo_dane_municipio IN ('73001
 | Dataset ID | `s54a-sgyg` |
 | Registros totales | ~165 millones |
 | ⚠️ Advertencia | NUNCA descargar sin filtros — usar agregaciones SoQL |
+| ⚠️ Advertencia crítica | `codigoestacion` NO está indexado — filtrar por `municipio` (MAYÚSCULAS) |
 
 **Columnas clave:** `codigoestacion`, `fechaobservacion`, `valorobservado`, `municipio`, `departamento`, `latitud`, `longitud`
 
-**Estrategia de descarga para el MVP:**
-```
-$select=codigoestacion,municipio,date_trunc_ym(fechaobservacion) AS mes,sum(valorobservado) AS prec_mensual
-$where=codigoestacion IN ('...') AND fechaobservacion >= '2007-01-01'
-$group=codigoestacion,municipio,date_trunc_ym(fechaobservacion)
+**Problema conocido con `codigoestacion`**:
+El servidor Socrata de `datos.gov.co` no tiene índice sobre `codigoestacion` en este dataset. Cualquier consulta con `WHERE codigoestacion IN (...)` provoca un full-scan de 165M registros y hace timeout, incluso con 1 sola estación y 1 año de datos. Esto se verificó en producción (mayo 2025).
+
+**Estrategia de descarga para el MVP — filtrar por `municipio`:**
+```sql
+-- Repetir para cada ventana mensual (IDEAM_MONTH_CHUNK meses)
+$select=municipio, date_trunc_y(fechaobservacion) AS año,
+        sum(valorobservado) AS prec_acum_mm, count(*) AS n_obs
+$where=municipio IN ('IBAGUE','CHAPARRAL','NEIVA','GARZON','PITALITO',
+                     'SAN VICENTE DE CHUCURI','RIONEGRO','ANORI','AMALFI',
+                     'PENSILVANIA','PALESTINA','VILLAVICENCIO',
+                     'EL TAMBO','MIRANDA','VALLEDUPAR')
+       AND valorobservado IS NOT NULL
+       AND fechaobservacion >= '2024-01-01T00:00:00.000'
+       AND fechaobservacion < '2024-02-01T00:00:00.000'
+$group=municipio, date_trunc_y(fechaobservacion)
+-- Re-agregar localmente con pandas después de concatenar todas las ventanas
 ```
 
 ---
@@ -109,10 +122,11 @@ $group=codigoestacion,municipio,date_trunc_ym(fechaobservacion)
 | Dataset ID | `sbwg-7ju4` |
 | Registros totales | ~50 millones |
 | ⚠️ Advertencia | Usar agregaciones, no descargar crudo |
+| ⚠️ Advertencia crítica | `codigoestacion` NO está indexado — filtrar por `municipio` (MAYÚSCULAS) |
 
 **Columnas clave:** `codigoestacion`, `fechaobservacion`, `valorobservado`, `municipio`, `latitud`, `longitud`
 
-**Estrategia**: misma que precipitación pero con `avg(valorobservado)` para temperatura media mensual.
+**Estrategia**: misma que precipitación — filtrar por `municipio` en MAYÚSCULAS con ventanas mensuales, usar `avg(valorobservado)` para temperatura media y `max(valorobservado)` para temperatura máxima proxy.
 
 ---
 
@@ -121,8 +135,11 @@ $group=codigoestacion,municipio,date_trunc_ym(fechaobservacion)
 |-------|-------|
 | Dataset ID | `uext-mhny` |
 | Cobertura MVP | 15/15 municipios (vía estaciones climatológicas/agrometeorológicas) |
+| ⚠️ Advertencia | `codigoestacion` NO está indexado — filtrar por `municipio` (MAYÚSCULAS) |
 
 **Columnas clave:** `codigoestacion`, `fechaobservacion`, `valorobservado`, `municipio`
+
+**Estrategia**: misma que precipitación y temperatura — filtrar por `municipio` en MAYÚSCULAS con ventanas mensuales.
 
 ---
 

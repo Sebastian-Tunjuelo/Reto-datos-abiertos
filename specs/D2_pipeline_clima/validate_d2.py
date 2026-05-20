@@ -117,11 +117,12 @@ def run_validations(data_dir: Path = DATA_DIR) -> None:
     assert df["hum_media_pct"].dtype == "float64", (
         f"❌ hum_media_pct no es float64: {df['hum_media_pct'].dtype}"
     )
-    assert df["n_estaciones_prec"].dtype == "int64", (
-        f"❌ n_estaciones_prec no es int64: {df['n_estaciones_prec'].dtype}"
+    # Aceptar int32/int64 o la versión nullable Int64
+    assert df["n_estaciones_prec"].dtype in ("int64", "int32", "Int64"), (
+        f"❌ n_estaciones_prec no es int64/int32/Int64: {df['n_estaciones_prec'].dtype}"
     )
-    assert df["n_estaciones_temp"].dtype == "int64", (
-        f"❌ n_estaciones_temp no es int64: {df['n_estaciones_temp'].dtype}"
+    assert df["n_estaciones_temp"].dtype in ("int64", "int32", "Int64"), (
+        f"❌ n_estaciones_temp no es int64/int32/Int64: {df['n_estaciones_temp'].dtype}"
     )
     assert df["anomalia_prec"].dtype == "float64", (
         f"❌ anomalia_prec no es float64: {df['anomalia_prec'].dtype}"

@@ -323,11 +323,11 @@ Qué debe hacer este módulo en una oración.
 
 | ID | Tarea | Entregable |
 |----|-------|-----------|
-| D1 | Pipeline EVA: descargar histórica + reciente, unificar columnas | `eva_historica.parquet`, `eva_reciente.parquet` |
-| D2 | Pipeline Clima: estaciones IDEAM, precipitación + temperatura agregadas, anomalías | `clima_agregado.parquet` |
-| D3 | Pipeline UPRA: aptitud café/cacao/maíz + frontera agrícola (GROUP BY SoQL) | 4 archivos Parquet |
-| D4 | Pipeline Económico: agroinsumos + percentil histórico | `agroinsumos.parquet` |
-| D5 | Tabla maestra: cruzar D1-D4 por municipio/cultivo/año, features rezagadas | `tabla_maestra.parquet` |
+| D1 | ✅ Pipeline EVA: descargar histórica + reciente, unificar columnas | `eva_historica.parquet`, `eva_reciente.parquet` |
+| D2 | ✅ Pipeline Clima: estaciones IDEAM, precipitación + temperatura agregadas, anomalías | `clima_agregado.parquet` |
+| D3 | ✅ Pipeline UPRA: aptitud café/cacao/maíz + frontera agrícola (GROUP BY SoQL) | 4 archivos Parquet |
+| D4 | ✅ Pipeline Económico: agroinsumos + percentil histórico | `agroinsumos.parquet` |
+| D5 | ✅ Tabla maestra: cruzar D1-D4 por municipio/cultivo/año, features rezagadas | `tabla_maestra.parquet` |
 
 ### Semana 2 — Modelo
 
