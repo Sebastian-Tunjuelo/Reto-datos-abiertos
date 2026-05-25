@@ -241,28 +241,35 @@ COLUMNAS_EVA = [
 
 ## Specs de desarrollo
 
-| ID   | Archivo                                                    | Estado      | Función objetivo                                                                                          |
-| ---- | ---------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| D1.1 | `specs/D1_pipeline_eva/D1.1_historica.md`                  | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_historica()`                                            |
-| D1.2 | `specs/D1_pipeline_eva/D1.2_reciente.md`                   | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_reciente()`                                             |
-| D1.3 | `specs/D1_pipeline_eva/D1.3_unificacion.md`                | ✅ Completo | `modules/agricultural/ingestion.py → run_pipeline()`                                                      |
-| D1.4 | `specs/D1_pipeline_eva/D1.4_validacion.md`                 | ✅ Completo | `scripts/validate_d1.py`                                                                                  |
-| D2.1 | `specs/D2_pipeline_clima/D2.1_estaciones.md`               | ✅ Completo | `modules/climate/ingestion.py → download_catalogo_estaciones()`                                           |
-| D2.2 | `specs/D2_pipeline_clima/D2.2_precipitacion.md`            | ✅ Completo | `modules/climate/ingestion.py → download_precipitacion()`                                                 |
-| D2.3 | `specs/D2_pipeline_clima/D2.3_temperatura_humedad.md`      | ✅ Completo | `modules/climate/ingestion.py → download_temperatura() + download_humedad()`                              |
-| D2.4 | `specs/D2_pipeline_clima/D2.4_anomalias_guardado.md`       | ✅ Completo | `modules/climate/aggregation.py → calcular_anomalias()` + `modules/climate/ingestion.py → run_pipeline()` |
-| D2.5 | `specs/D2_pipeline_clima/D2.5_validacion.md`               | ✅ Completo | `specs/D2_pipeline_clima/validate_d2.py → run_validations()`                                              |
-| D3.1 | `specs/D3_pipeline_territorial/D3.1_aptitud_cafe_cacao.md` | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_cafe() + download_aptitud_cacao()`                   |
-| D3.2 | `specs/D3_pipeline_territorial/D3.2_aptitud_maiz.md`       | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_maiz()`                                              |
-| D3.3 | `specs/D3_pipeline_territorial/D3.3_frontera.md`           | ✅ Completo | `modules/territorial/ingestion.py → download_frontera()`                                                  |
-| D3.4 | `specs/D3_pipeline_territorial/D3.4_validacion.md`         | ✅ Completo | `specs/D3_pipeline_territorial/validate_d3.py → run_validations()`                                        |
-| D4.1 | `specs/D4_pipeline_economico/D4.1_descarga_limpieza.md`    | ✅ Completo | `modules/economic/ingestion.py → download_agroinsumos()`                                                  |
-| D4.2 | `specs/D4_pipeline_economico/D4.2_agregacion_anual.md`     | ✅ Completo | `modules/economic/ingestion.py → build_agroinsumos_anual()` + `run_pipeline()`                            |
-| D4.3 | `specs/D4_pipeline_economico/D4.3_validacion.md`           | ✅ Completo | `specs/D4_pipeline_economico/validate_d4.py → run_validations()`                                          |
-| D5.1 | `specs/D5_tabla_maestra/D5.1_carga_validacion_inputs.md`   | ✅ Completo | `modules/predictive/feature_builder.py → load_inputs()`                                                   |
-| D5.2 | `specs/D5_tabla_maestra/D5.2_features_eva.md`              | ✅ Completo | `modules/predictive/feature_builder.py → build_eva_features()`                                            |
-| D5.3 | `specs/D5_tabla_maestra/D5.3_cruce_features.md`            | ✅ Completo | `modules/predictive/feature_builder.py → build_tabla_maestra()` + `load_tabla_maestra()`                  |
-| D5.4 | `specs/D5_tabla_maestra/D5.4_validacion.md`                | ✅ Completo | `specs/D5_tabla_maestra/validate_d5.py → run_validations()`                                               |
+| ID   | Archivo                                                                    | Estado      | Función objetivo                                                                                          |
+| ---- | -------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- | --- | ---- | ------------------------------------------------- | ----------- | ----------------------------------------------------------------- |
+| D1.1 | `specs/D1_pipeline_eva/D1.1_historica.md`                                  | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_historica()`                                            |
+| D1.2 | `specs/D1_pipeline_eva/D1.2_reciente.md`                                   | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_reciente()`                                             |
+| D1.3 | `specs/D1_pipeline_eva/D1.3_unificacion.md`                                | ✅ Completo | `modules/agricultural/ingestion.py → run_pipeline()`                                                      |
+| D1.4 | `specs/D1_pipeline_eva/D1.4_validacion.md`                                 | ✅ Completo | `scripts/validate_d1.py`                                                                                  |
+| D2.1 | `specs/D2_pipeline_clima/D2.1_estaciones.md`                               | ✅ Completo | `modules/climate/ingestion.py → download_catalogo_estaciones()`                                           |
+| D2.2 | `specs/D2_pipeline_clima/D2.2_precipitacion.md`                            | ✅ Completo | `modules/climate/ingestion.py → download_precipitacion()`                                                 |
+| D2.3 | `specs/D2_pipeline_clima/D2.3_temperatura_humedad.md`                      | ✅ Completo | `modules/climate/ingestion.py → download_temperatura() + download_humedad()`                              |
+| D2.4 | `specs/D2_pipeline_clima/D2.4_anomalias_guardado.md`                       | ✅ Completo | `modules/climate/aggregation.py → calcular_anomalias()` + `modules/climate/ingestion.py → run_pipeline()` |
+| D2.5 | `specs/D2_pipeline_clima/D2.5_validacion.md`                               | ✅ Completo | `specs/D2_pipeline_clima/validate_d2.py → run_validations()`                                              |
+| D3.1 | `specs/D3_pipeline_territorial/D3.1_aptitud_cafe_cacao.md`                 | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_cafe() + download_aptitud_cacao()`                   |
+| D3.2 | `specs/D3_pipeline_territorial/D3.2_aptitud_maiz.md`                       | ✅ Completo | `modules/territorial/ingestion.py → download_aptitud_maiz()`                                              |
+| D3.3 | `specs/D3_pipeline_territorial/D3.3_frontera.md`                           | ✅ Completo | `modules/territorial/ingestion.py → download_frontera()`                                                  |
+| D3.4 | `specs/D3_pipeline_territorial/D3.4_validacion.md`                         | ✅ Completo | `specs/D3_pipeline_territorial/validate_d3.py → run_validations()`                                        |
+| D4.1 | `specs/D4_pipeline_economico/D4.1_descarga_limpieza.md`                    | ✅ Completo | `modules/economic/ingestion.py → download_agroinsumos()`                                                  |
+| D4.2 | `specs/D4_pipeline_economico/D4.2_agregacion_anual.md`                     | ✅ Completo | `modules/economic/ingestion.py → build_agroinsumos_anual()` + `run_pipeline()`                            |
+| D4.3 | `specs/D4_pipeline_economico/D4.3_validacion.md`                           | ✅ Completo | `specs/D4_pipeline_economico/validate_d4.py → run_validations()`                                          |
+| D5.1 | `specs/D5_tabla_maestra/D5.1_carga_validacion_inputs.md`                   | ✅ Completo | `modules/predictive/feature_builder.py → load_inputs()`                                                   |
+| D5.2 | `specs/D5_tabla_maestra/D5.2_features_eva.md`                              | ✅ Completo | `modules/predictive/feature_builder.py → build_eva_features()`                                            |
+| D5.3 | `specs/D5_tabla_maestra/D5.3_cruce_features.md`                            | ✅ Completo | `modules/predictive/feature_builder.py → build_tabla_maestra()` + `load_tabla_maestra()`                  |
+| D5.4 | `specs/D5_tabla_maestra/D5.4_validacion.md`                                | ✅ Completo | `specs/D5_tabla_maestra/validate_d5.py → run_validations()`                                               |
+| M1.1 | `specs/M1_feature_engineering/M1.1_validacion_entrada_clima.md`            | ✅ Completo | `modules/predictive/feature_builder.py → _validate_input()` + `_apply_climate_ranges()`                   |
+| M1.2 | `specs/M1_feature_engineering/M1.2_rezagos_temporales.md`                  | ✅ Completo | `modules/predictive/feature_builder.py → _build_lag_features()`                                           |
+| M1.3 | `specs/M1_feature_engineering/M1.3_aptitud_agroinsumos_schema.md`          | ✅ Completo | `modules/predictive/feature_builder.py → build_feature_matrix()`                                          |     | M1.4 | `specs/M1_feature_engineering/M1.4_validacion.md` | ✅ Completo | `specs/M1_feature_engineering/validate_m1.py → run_validations()` |
+| M2.1 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.1_carga_validacion_features.md` | ✅ Completo | `modules/predictive/train_regressor.py → load_feature_matrix()`, `prepare_regression_frame()`             |
+| M2.2 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.2_entrenamiento_por_cultivo.md` | ✅ Completo | `modules/predictive/train_regressor.py → train_regressors()`, `_train_single_cultivo()`                   |
+| M2.3 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.3_evaluacion_y_guardado.md`     | ✅ Completo | `modules/predictive/train_regressor.py → evaluate_and_save_metrics()`                                     |
+| M2.4 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.4_validacion.md`                | ✅ Completo | `specs/M2_XGBoost_Regressor_por_cultivo/validate_m2.py → run_validation()`                                |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -379,7 +386,7 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/territorial/__init__.py`   | ✅ Expone `download_aptitud_cafe`, `download_aptitud_cacao`, `download_aptitud_maiz`, `download_frontera`                                                                   |
 | `modules/territorial/ingestion.py`  | ✅ D3.1 completo — `download_aptitud_cafe()` + `download_aptitud_cacao()` / ✅ D3.2 completo — `download_aptitud_maiz()` / ✅ D3.3 completo — `download_frontera()`         |
 | `modules/economic/`                 | ✅ D4.1–D4.3 completos (ingestion + validacion)                                                                                                                             |
-| `modules/predictive/`               | ✅ D5.1–D5.4 completos                                                                                                                                                      |
+| `modules/predictive/`               | ✅ D5.1–D5.4, M1.1-M1.4 y M2.1-M2.4 completos                                                                                                                               |
 | `modules/explainability/`           | 🔲 Por implementar                                                                                                                                                          |
 | `modules/conversational/`           | 🔲 Por implementar                                                                                                                                                          |
 | `orchestrator/`                     | 🔲 Por implementar                                                                                                                                                          |

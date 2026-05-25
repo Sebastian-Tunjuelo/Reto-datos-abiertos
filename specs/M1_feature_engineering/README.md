@@ -15,12 +15,12 @@ La variable objetivo es `rendimiento`. La Feature_Matrix se usa para entrenar:
 
 ## Subtareas
 
-| ID   | Archivo                                                                  | Que hace                                | Depende de | Estado       |
-| ---- | ------------------------------------------------------------------------ | --------------------------------------- | ---------- | ------------ |
-| M1.1 | [M1.1_validacion_entrada_clima.md](M1.1_validacion_entrada_clima.md)     | Validacion de input + clamping de clima | —          | ⏳ Pendiente |
-| M1.2 | [M1.2_rezagos_temporales.md](M1.2_rezagos_temporales.md)                 | Rezagos sin fuga por municipio-cultivo  | M1.1       | ⏳ Pendiente |
-| M1.3 | [M1.3_aptitud_agroinsumos_schema.md](M1.3_aptitud_agroinsumos_schema.md) | Aptitud, agroinsumos, esquema, guardado | M1.2       | ⏳ Pendiente |
-| M1.4 | [M1.4_validacion.md](M1.4_validacion.md)                                 | Script de validacion independiente      | M1.3       | ⏳ Pendiente |
+| ID   | Archivo                                                                  | Que hace                                | Depende de | Estado        |
+| ---- | ------------------------------------------------------------------------ | --------------------------------------- | ---------- | ------------- |
+| M1.1 | [M1.1_validacion_entrada_clima.md](M1.1_validacion_entrada_clima.md)     | Validacion de input + clamping de clima | —          | ✅ Completado |
+| M1.2 | [M1.2_rezagos_temporales.md](M1.2_rezagos_temporales.md)                 | Rezagos sin fuga por municipio-cultivo  | M1.1       | ✅ Completado |
+| M1.3 | [M1.3_aptitud_agroinsumos_schema.md](M1.3_aptitud_agroinsumos_schema.md) | Aptitud, agroinsumos, esquema, guardado | M1.2       | ✅ Completado |
+| M1.4 | [M1.4_validacion.md](M1.4_validacion.md)                                 | Script de validacion independiente      | M1.3       | ✅ Completado |
 
 > M1.1, M1.2 y M1.3 son secuenciales. M1.4 depende del output final.
 

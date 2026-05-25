@@ -11,10 +11,34 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from shared.config import CULTIVOS_MVP, DATA_DIR, TEST_DESDE, TRAIN_HASTA, VAL_AÑO
+from shared.config import CULTIVOS_MVP, DATA_DIR, TEST_DESDE, TRAIN_HASTA, VAL_AÑO, RENDIMIENTO_RANGOS
 from shared.dane_codes import MVP_CODIGOS
+from shared.normalization import normalize_dane_code
 
 logger = logging.getLogger(__name__)
+
+RANGOS_CLIMATICOS = {
+    "prec_acum_mm":  (0.0,    None),
+    "anomalia_prec": (-2000.0, 2000.0),
+    "temp_media_c":  (-5.0,   45.0),
+    "anomalia_temp": (-20.0,  20.0),
+    "dias_secos":    (0.0,    365.0),
+    "hum_media_pct": (0.0,    100.0),
+}
+
+COLUMNAS_FEATURE_MATRIX = [
+    "codigo_dane", "municipio", "departamento", "cultivo", "año",
+    "prec_acum_mm", "anomalia_prec", "temp_media_c", "anomalia_temp",
+    "dias_secos", "hum_media_pct",
+    "rendimiento_t1", "rendimiento_prom3a", "tendencia_rend_3a",
+    "area_sembrada_t1",
+    "pct_alta", "pct_media", "pct_baja", "pct_exclusion",
+    "pct_condicionada", "pct_no_condicionada",
+    "indice_agroinsumos", "percentil_fertilizantes", "señal_riesgo_economico",
+    "target_rendimiento",
+]
+
+COLUMNAS_PROHIBIDAS = ["produccion", "area_cosechada", "rendimiento"]
 
 
 _INPUT_SPECS = [
@@ -501,6 +525,301 @@ def load_tabla_maestra(data_dir: Path = DATA_DIR) -> pd.DataFrame:
             f"D5.3: Falta {path.name}. Ejecutar build_tabla_maestra() primero."
         )
     return pd.read_parquet(path)
+
+
+def _validate_input(df: pd.DataFrame) -> pd.DataFrame:
+    """Valida la tabla maestra según spec M1.1."""
+    if df is None or df.empty:
+        raise ValueError("[M1] tabla_maestra esta vacia")
+
+    req_cols = ["codigo_dane", "cultivo", "año"]
+    missing = [c for c in req_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"[M1] Columnas faltantes: {missing}")
+
+    # Filtrar cultivos
+    invalid_cultivos = df[~df["cultivo"].isin(CULTIVOS_MVP)]["cultivo"].unique()
+    if len(invalid_cultivos) > 0:
+        n_invalid = (~df["cultivo"].isin(CULTIVOS_MVP)).sum()
+        logger.warning(f"[M1] {n_invalid} filas descartadas — cultivos no reconocidos: {invalid_cultivos.tolist()}")
+        df = df[df["cultivo"].isin(CULTIVOS_MVP)].copy()
+
+    # Normalizar codigo_dane
+    df["codigo_dane_norm"] = df["codigo_dane"].apply(normalize_dane_code)
+    n_invalid_dane = df["codigo_dane_norm"].isna().sum()
+    if n_invalid_dane > 0:
+        logger.warning(f"[M1] {n_invalid_dane} filas descartadas por codigo_dane invalido")
+    df = df[df["codigo_dane_norm"].notna()].copy()
+    df["codigo_dane"] = df["codigo_dane_norm"]
+    df = df.drop(columns=["codigo_dane_norm"])
+
+    # Filtrar años 2007-2024
+    if df["año"].notna().any():
+        valid_year_mask = (df["año"] >= 2007) & (df["año"] <= 2024)
+        n_invalid_year = (~valid_year_mask).sum()
+        if n_invalid_year > 0:
+            logger.warning(f"[M1] {n_invalid_year} filas descartadas — año fuera de rango 2007–2024")
+        df = df[valid_year_mask].copy()
+
+    if df.empty:
+        raise ValueError("[M1] No quedan filas validas tras filtro de año 2007–2024")
+
+    return df
+
+
+def _apply_climate_ranges(df: pd.DataFrame) -> pd.DataFrame:
+    """Aplica clamping a variables climáticas según spec M1.1."""
+    df = df.copy()
+    for col, (vmin, vmax) in RANGOS_CLIMATICOS.items():
+        if col not in df.columns:
+            logger.warning(f"[M1] Falta columna climática: {col}. Rellenando con NaN.")
+            df[col] = np.nan
+        else:
+            # Clamping
+            out_of_bounds = pd.Series(False, index=df.index)
+            if vmin is not None:
+                out_of_bounds |= (df[col] < vmin)
+            if vmax is not None:
+                out_of_bounds |= (df[col] > vmax)
+                
+            n_out = out_of_bounds.sum()
+            if n_out > 0:
+                logger.warning(f"[M1] {n_out} filas con {col} fuera de rango. Reemplazando por NaN.")
+                df.loc[out_of_bounds, col] = np.nan
+
+    # Verificar si todas las climáticas son NaN por municipio y año
+    # Para agrupar usamos codigo_dane y año, pero solo loggeamos
+    climate_cols = list(RANGOS_CLIMATICOS.keys())
+    all_nan_mask = df[climate_cols].isna().all(axis=1)
+    if all_nan_mask.any():
+        invalid_groups = df[all_nan_mask][["codigo_dane", "año"]].drop_duplicates()
+        if not invalid_groups.empty:
+            logger.warning(f"[M1] Las 6 variables climáticas son NaN en {len(invalid_groups)} pares (codigo_dane, año).")
+
+    return df
+
+
+def _build_lag_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Calcula rezagos y tendencias previniendo fuga de información (M1.2)."""
+    req_cols = ["codigo_dane", "cultivo", "año", "rendimiento", "area_sembrada"]
+    missing = [c for c in req_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"[M1.2] Columnas faltantes: {missing}")
+
+    df = df.copy()
+    df = df.sort_values(["codigo_dane", "cultivo", "año"]).reset_index(drop=True)
+    grupo = df.groupby(["codigo_dane", "cultivo"], sort=False)
+    
+    # 1. Calcular rezagos base usando shift(1)
+    df["año_t1"] = grupo["año"].shift(1)
+    df["rendimiento_t1"] = grupo["rendimiento"].shift(1)
+    df["area_sembrada_t1"] = grupo["area_sembrada"].shift(1)
+    
+    def _prom3a(s: pd.Series) -> pd.Series:
+        return s.shift(1).rolling(window=3, min_periods=2).mean()
+
+    def _slope3a(s: pd.Series) -> pd.Series:
+        def _slope(window_vals: pd.Series) -> float:
+            vals = window_vals.dropna()
+            if len(vals) < 3:
+                return np.nan
+            x = np.arange(len(vals))
+            return float(np.polyfit(x, vals, 1)[0])
+        return s.shift(1).rolling(window=3, min_periods=3).apply(_slope, raw=False)
+        
+    df["rendimiento_prom3a"] = grupo["rendimiento"].apply(_prom3a).reset_index(level=[0, 1], drop=True)
+    df["tendencia_rend_3a"] = grupo["rendimiento"].apply(_slope3a).reset_index(level=[0, 1], drop=True)
+    
+    # 2. Restricciones de split temporal
+    def get_max_allowed(t: int) -> int:
+        if pd.isna(t):
+            return t
+        if t <= 2021: return t - 1
+        if t == 2022: return 2021
+        return 2022
+
+    df["max_allowed"] = df["año"].apply(get_max_allowed)
+    
+    # 3. Forzar NaN si el lag viola el límite de tiempo
+    invalid_mask = df["año_t1"] > df["max_allowed"]
+    
+    cols_to_nan = ["rendimiento_t1", "area_sembrada_t1", "rendimiento_prom3a", "tendencia_rend_3a"]
+    df.loc[invalid_mask, cols_to_nan] = np.nan
+    
+    # Limpiar columnas temporales
+    df = df.drop(columns=["año_t1", "max_allowed"])
+    
+    return df
+
+
+def _map_aptitud_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df = df.rename(columns={
+        "pct_aptitud_alta": "pct_alta",
+        "pct_aptitud_media": "pct_media",
+        "pct_aptitud_baja": "pct_baja",
+        "rendimiento_tend3a": "tendencia_rend_3a",
+        "señal_riesgo_eco": "señal_riesgo_economico",
+    })
+    
+    if "pct_no_condicionada" not in df.columns:
+        df["pct_no_condicionada"] = np.nan
+        
+    for col in ["pct_alta", "pct_media", "pct_baja", "pct_exclusion"]:
+        if col not in df.columns:
+            df[col] = np.nan
+            
+    apt_cols = ["pct_alta", "pct_media", "pct_baja", "pct_exclusion"]
+    if df[apt_cols].isna().any(axis=1).any():
+        logger.warning("[M1.3] Faltan columnas de aptitud para algunos MVP")
+        
+    df_apt = df[apt_cols].fillna(0).sum(axis=1)
+    bad_apt = (df_apt < 99) | (df_apt > 101)
+    if (bad_apt & df[apt_cols].notna().any(axis=1)).any():
+        logger.warning("[M1.3] Suma de aptitud difiere de 100 en >1pp")
+        
+    front_cols = ["pct_condicionada", "pct_no_condicionada"]
+    df_front = df[front_cols].fillna(0).sum(axis=1)
+    bad_front = (df_front < 99) | (df_front > 101)
+    if (bad_front & df[front_cols].notna().any(axis=1)).any():
+        logger.warning("[M1.3] Suma de frontera difiere de 100 en >1pp")
+        
+    return df
+
+
+def _join_agroinsumos(df: pd.DataFrame, data_dir: Path) -> pd.DataFrame:
+    path = data_dir / "agroinsumos.parquet"
+    if not path.exists():
+        raise FileNotFoundError("[M1] Falta agroinsumos.parquet. Ejecutar D4.2 primero.")
+        
+    df = df.copy()
+    agr = pd.read_parquet(path)
+    agr = agr.rename(columns={"indice_total": "indice_agroinsumos", "señal_riesgo": "señal_riesgo_economico_agr"})
+    
+    df = pd.merge(df, agr[["año", "indice_agroinsumos", "fertilizantes", "señal_riesgo_economico_agr"]], on="año", how="left")
+    
+    if "señal_riesgo_economico" in df.columns:
+        df["señal_riesgo_economico"] = df["señal_riesgo_economico_agr"].combine_first(df["señal_riesgo_economico"])
+    else:
+        df["señal_riesgo_economico"] = df["señal_riesgo_economico_agr"]
+        
+    df = df.drop(columns=["señal_riesgo_economico_agr"])
+    
+    nan_years = df.loc[df["indice_agroinsumos"].isna(), "año"].unique()
+    if len(nan_years) > 0:
+        logger.warning(f"[M1.3] Años sin agroinsumos: {nan_years.tolist()}. Rellenando con NaN.")
+        
+    return df
+
+
+def _calc_percentil_fert(df: pd.DataFrame, data_dir: Path) -> pd.DataFrame:
+    df = df.copy()
+    path = data_dir / "agroinsumos.parquet"
+    agr = pd.read_parquet(path)
+    
+    df["percentil_fertilizantes"] = np.nan
+    for t in df["año"].dropna().unique():
+        hist = agr.loc[agr["año"] <= t, "fertilizantes"].dropna()
+        val = agr.loc[agr["año"] == t, "fertilizantes"]
+        if not hist.empty and not val.empty and not pd.isna(val.iloc[0]):
+            perc = (hist <= val.iloc[0]).mean() * 100
+            df.loc[df["año"] == t, "percentil_fertilizantes"] = perc
+            
+    return df
+
+
+def _rename_target(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    if "rendimiento" in df.columns:
+        df = df.rename(columns={"rendimiento": "target_rendimiento"})
+    return df
+
+
+def _enforce_schema(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    valid_signals = {"bajo", "medio", "alto"}
+    if "señal_riesgo_economico" in df.columns:
+        invalid = ~df["señal_riesgo_economico"].isin(valid_signals) & df["señal_riesgo_economico"].notna()
+        if invalid.any():
+            logger.warning(f"[M1.3] {invalid.sum()} filas con señal de riesgo inválida.")
+            df.loc[invalid, "señal_riesgo_economico"] = np.nan
+            
+    for col in COLUMNAS_FEATURE_MATRIX:
+        if col not in df.columns:
+            df[col] = np.nan
+            
+    cat_cols = {"codigo_dane", "municipio", "departamento", "cultivo", "señal_riesgo_economico"}
+    for col in COLUMNAS_FEATURE_MATRIX:
+        if col not in cat_cols:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            
+    return df[COLUMNAS_FEATURE_MATRIX]
+
+
+def _assert_no_leakage(df: pd.DataFrame) -> None:
+    for col in COLUMNAS_PROHIBIDAS:
+        if col in df.columns:
+            raise AssertionError(f"[M1] Fuga detectada — columnas prohibidas: {col}")
+
+
+def _validate_mvp(df: pd.DataFrame) -> None:
+    missing = [c for c in MVP_CODIGOS if c not in df["codigo_dane"].unique()]
+    for c in missing:
+        logger.warning(f"[M1.3] Faltan datos para municipio MVP: {c}")
+
+    train = df[df["año"] <= TRAIN_HASTA]
+    for col in ["rendimiento_t1", "prec_acum_mm", "temp_media_c", "indice_agroinsumos"]:
+        if col in train.columns and train[col].isna().any():
+            logger.warning(f"[M1.3] NaN en {col} en train")
+
+    if "rendimiento_t1" in train.columns:
+        for cult, (vmin, vmax) in RENDIMIENTO_RANGOS.items():
+            sub = train[train["cultivo"] == cult]["rendimiento_t1"]
+            if ((sub < vmin) | (sub > vmax)).any():
+                logger.warning(f"[M1.3] rendimiento_t1 fuera de rango para {cult} en train")
+
+    if "prec_acum_mm" in train.columns and (train["prec_acum_mm"] <= 0).any():
+        logger.warning("[M1.3] prec_acum_mm <= 0 en train")
+
+    apt_cols = ["pct_alta", "pct_media", "pct_baja", "pct_exclusion"]
+    sum_apt = train[apt_cols].fillna(0).sum(axis=1)
+    has_apt = train[apt_cols].notna().any(axis=1)
+    if ((sum_apt < 99) | (sum_apt > 101)).where(has_apt, False).any():
+        logger.warning("[M1.3] Suma de aptitud fuera de [99, 101] en train")
+
+    for (c, cult), group in train.groupby(["codigo_dane", "cultivo"]):
+        if len(group) < 3:
+            logger.warning(f"[M1.3] Menos de 3 filas en train para {c} - {cult}")
+
+    logger.info("[M1.3] Final de _validate_mvp (PASS/WARN)")
+
+
+def _save_and_log(df: pd.DataFrame, output_dir: Path) -> None:
+    path = output_dir / "feature_matrix.parquet"
+    df.to_parquet(path, index=False, engine="pyarrow")
+    logger.info(
+        f"[M1.3] Feature Matrix guardada: {len(df)} filas, {df.shape[1]} col, "
+        f"{df['codigo_dane'].nunique()} mun, {df['cultivo'].nunique()} cult"
+    )
+
+
+def build_feature_matrix(
+    tabla_maestra: pd.DataFrame,
+    data_dir: Path = DATA_DIR,
+    output_dir: Path = DATA_DIR,
+) -> pd.DataFrame:
+    df = _validate_input(tabla_maestra)
+    df = _apply_climate_ranges(df)
+    df = _build_lag_features(df)
+    df = _map_aptitud_columns(df)
+    df = _join_agroinsumos(df, data_dir)
+    df = _calc_percentil_fert(df, data_dir)
+    df = _rename_target(df)
+    df = _enforce_schema(df)
+    _assert_no_leakage(df)
+    _validate_mvp(df)
+    _save_and_log(df, output_dir)
+    return df
 
 
 if __name__ == "__main__":

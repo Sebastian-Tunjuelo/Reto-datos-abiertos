@@ -15,12 +15,12 @@ feature y la particion es por año.
 
 ## Subtareas
 
-| ID   | Archivo                                                                | Que hace                                | Depende de | Estado    |
-| ---- | ---------------------------------------------------------------------- | --------------------------------------- | ---------- | --------- |
-| M2.1 | [M2.1_carga_validacion_features.md](M2.1_carga_validacion_features.md) | Carga y valida `feature_matrix.parquet` | M1         | Pendiente |
-| M2.2 | [M2.2_entrenamiento_por_cultivo.md](M2.2_entrenamiento_por_cultivo.md) | Entrena XGBoost por cultivo             | M2.1       | Pendiente |
-| M2.3 | [M2.3_evaluacion_y_guardado.md](M2.3_evaluacion_y_guardado.md)         | Calcula metricas y guarda artefactos    | M2.2       | Pendiente |
-| M2.4 | [M2.4_validacion.md](M2.4_validacion.md)                               | Script de validacion independiente      | M2.3       | Pendiente |
+| ID   | Archivo                                                                | Que hace                                | Depende de | Estado     |
+| ---- | ---------------------------------------------------------------------- | --------------------------------------- | ---------- | ---------- |
+| M2.1 | [M2.1_carga_validacion_features.md](M2.1_carga_validacion_features.md) | Carga y valida `feature_matrix.parquet` | M1         | Completado |
+| M2.2 | [M2.2_entrenamiento_por_cultivo.md](M2.2_entrenamiento_por_cultivo.md) | Entrena XGBoost por cultivo             | M2.1       | Completado |
+| M2.3 | [M2.3_evaluacion_y_guardado.md](M2.3_evaluacion_y_guardado.md)         | Calcula metricas y guarda artefactos    | M2.2       | Completado |
+| M2.4 | [M2.4_validacion.md](M2.4_validacion.md)                               | Script de validacion independiente      | M2.3       | Completado |
 
 ## Outputs finales
 
