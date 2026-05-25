@@ -6,13 +6,13 @@ La propuesta competitiva no debe ser solo "un modelo que predice rendimiento". D
 
 # 1. PROBLEMAS Y PRIORIZACIÓN
 
-| Prioridad | Problema concreto | Impacto | Viabilidad 1 mes | Potencial hackathon |
-|---:|---|---:|---:|---:|
-| 1 | Predicción de caída de rendimiento por anomalías climáticas en cultivos clave | Muy alto | Alta | Muy alto |
-| 2 | Decisiones de siembra en municipios con baja aptitud o alta restricción agropecuaria | Muy alto | Alta-media | Muy alto |
-| 3 | Riesgo económico por precios de mercado e insumos agrícolas | Alto | Alta | Alto |
-| 4 | Alertas de precio para productos perecederos regionales | Medio-alto | Media | Medio-alto |
-| 5 | Calidad/anomalías de datos meteorológicos | Medio | Alta | Medio |
+| Prioridad | Problema concreto                                                                    |    Impacto | Viabilidad 1 mes | Potencial hackathon |
+| --------: | ------------------------------------------------------------------------------------ | ---------: | ---------------: | ------------------: |
+|         1 | Predicción de caída de rendimiento por anomalías climáticas en cultivos clave        |   Muy alto |             Alta |            Muy alto |
+|         2 | Decisiones de siembra en municipios con baja aptitud o alta restricción agropecuaria |   Muy alto |       Alta-media |            Muy alto |
+|         3 | Riesgo económico por precios de mercado e insumos agrícolas                          |       Alto |             Alta |                Alto |
+|         4 | Alertas de precio para productos perecederos regionales                              | Medio-alto |            Media |          Medio-alto |
+|         5 | Calidad/anomalías de datos meteorológicos                                            |      Medio |             Alta |               Medio |
 
 Los problemas 1, 2 y 3 se resuelven de forma integrada en la propuesta principal. Los problemas 4 y 5 son complementarios o descartables para el MVP.
 
@@ -41,13 +41,13 @@ Para cada combinación `municipio + cultivo + periodo` entrega:
 
 ### Por qué es competitiva
 
-| Solución tradicional | SiembraSegura IA |
-|---|---|
-| Muestra clima histórico | Calcula riesgo productivo |
-| Muestra producción pasada | Predice rendimiento esperado |
-| Dashboard descriptivo | Recomendación accionable |
-| Sin explicación | Explica factores de riesgo vía SHAP |
-| Datos aislados | Cruza EVA + IDEAM + UPRA + agroinsumos |
+| Solución tradicional      | SiembraSegura IA                       |
+| ------------------------- | -------------------------------------- |
+| Muestra clima histórico   | Calcula riesgo productivo              |
+| Muestra producción pasada | Predice rendimiento esperado           |
+| Dashboard descriptivo     | Recomendación accionable               |
+| Sin explicación           | Explica factores de riesgo vía SHAP    |
+| Datos aislados            | Cruza EVA + IDEAM + UPRA + agroinsumos |
 
 ---
 
@@ -55,32 +55,32 @@ Para cada combinación `municipio + cultivo + periodo` entrega:
 
 ## Datasets principales — datos.gov.co
 
-| Dataset | ID Socrata | Variables clave | Uso |
-|---|---|---|---|
-| EVA histórica 2007-2018 | `2pnw-mmge` | municipio, cultivo, año, área sembrada/cosechada, producción, rendimiento | Variable objetivo `rendimiento_t_ha` |
-| EVA reciente 2019-2024 | `uejq-wxrr` | código DANE, cultivo, área, producción, rendimiento, año | Actualización para entrenamiento y validación |
-| Precipitación IDEAM | `s54a-sgyg` | estación, fecha, valor mm, municipio, lat/lon | Lluvia acumulada, déficit, días secos ⚠️ ~165M registros — siempre agregar |
-| Temperatura IDEAM | `sbwg-7ju4` | estación, fecha, temperatura °C, municipio | Temperatura media, anomalías, estrés térmico ⚠️ ~50M registros — siempre agregar |
-| Humedad IDEAM | `uext-mhny` | estación, fecha, humedad relativa, municipio | Riesgo de enfermedades, estrés agroclimático |
-| Estaciones recientes IDEAM | `57sv-p2fu` | estación, sensor, fecha, valor, municipio | Monitoreo reciente |
-| Catálogo estaciones IDEAM | `hp9r-jxuu` | código, nombre, estado, municipio, altitud | Selección de estaciones cercanas |
-| Frontera agrícola UPRA | `fyc7-sbtz` | municipio, código DANE, tipo frontera, área ha ⚠️ geometrías | Restricciones de uso del suelo |
-| Aptitud café UPRA | `kwvf-nwea` | municipio, código DANE, aptitud, área ha ⚠️ geometrías | Variable de aptitud para café |
-| Aptitud cacao UPRA | `jdjx-qer4` | municipio, código DANE, aptitud, área ha ⚠️ geometrías | Variable de aptitud para cacao |
-| Aptitud maíz tradicional UPRA | `frjn-92um` | municipio, código DANE, aptitud, área ha | Variable de aptitud para maíz |
-| Aptitud maíz tec. 1er sem. UPRA | `a5yc-uszt` | municipio, aptitud, área ha ⚠️ geometrías | Comparación por semestre |
-| Aptitud maíz tec. 2do sem. UPRA | `tzga-4zse` | municipio, aptitud, área ha ⚠️ geometrías | Comparación por semestre |
-| Índice agroinsumos | `gwbi-fnzs` | fecha, índice total, fertilizantes, plaguicidas, urea, DAP, KCL | Riesgo económico por costos |
-| Precios RAP Eje Cafetero | `gdqq-rry2` | producto, mercado, precio mín/máx/medio, fecha, ciudad | Complemento económico regional |
+| Dataset                         | ID Socrata  | Variables clave                                                           | Uso                                                                              |
+| ------------------------------- | ----------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| EVA histórica 2007-2018         | `2pnw-mmge` | municipio, cultivo, año, área sembrada/cosechada, producción, rendimiento | Variable objetivo `rendimiento_t_ha`                                             |
+| EVA reciente 2019-2024          | `uejq-wxrr` | código DANE, cultivo, área, producción, rendimiento, año                  | Actualización para entrenamiento y validación                                    |
+| Precipitación IDEAM             | `s54a-sgyg` | estación, fecha, valor mm, municipio, lat/lon                             | Lluvia acumulada, déficit, días secos ⚠️ ~165M registros — siempre agregar       |
+| Temperatura IDEAM               | `sbwg-7ju4` | estación, fecha, temperatura °C, municipio                                | Temperatura media, anomalías, estrés térmico ⚠️ ~50M registros — siempre agregar |
+| Humedad IDEAM                   | `uext-mhny` | estación, fecha, humedad relativa, municipio                              | Riesgo de enfermedades, estrés agroclimático                                     |
+| Estaciones recientes IDEAM      | `57sv-p2fu` | estación, sensor, fecha, valor, municipio                                 | Monitoreo reciente                                                               |
+| Catálogo estaciones IDEAM       | `hp9r-jxuu` | código, nombre, estado, municipio, altitud                                | Selección de estaciones cercanas                                                 |
+| Frontera agrícola UPRA          | `fyc7-sbtz` | municipio, código DANE, tipo frontera, área ha ⚠️ geometrías              | Restricciones de uso del suelo                                                   |
+| Aptitud café UPRA               | `kwvf-nwea` | municipio, código DANE, aptitud, área ha ⚠️ geometrías                    | Variable de aptitud para café                                                    |
+| Aptitud cacao UPRA              | `jdjx-qer4` | municipio, código DANE, aptitud, área ha ⚠️ geometrías                    | Variable de aptitud para cacao                                                   |
+| Aptitud maíz tradicional UPRA   | `frjn-92um` | municipio, código DANE, aptitud, área ha                                  | Variable de aptitud para maíz                                                    |
+| Aptitud maíz tec. 1er sem. UPRA | `a5yc-uszt` | municipio, aptitud, área ha ⚠️ geometrías                                 | Comparación por semestre                                                         |
+| Aptitud maíz tec. 2do sem. UPRA | `tzga-4zse` | municipio, aptitud, área ha ⚠️ geometrías                                 | Comparación por semestre                                                         |
+| Índice agroinsumos              | `gwbi-fnzs` | fecha, índice total, fertilizantes, plaguicidas, urea, DAP, KCL           | Riesgo económico por costos                                                      |
+| Precios RAP Eje Cafetero        | `gdqq-rry2` | producto, mercado, precio mín/máx/medio, fecha, ciudad                    | Complemento económico regional                                                   |
 
 ## Fuentes adicionales opcionales
 
-| Fuente | Uso |
-|---|---|
+| Fuente              | Uso                                                                   |
+| ------------------- | --------------------------------------------------------------------- |
 | NASA POWER / CHIRPS | Clima histórico por coordenadas cuando no haya estación IDEAM cercana |
-| ERA5 / Copernicus | Variables climáticas reanalizadas |
-| TerriData / DNP | Variables socioeconómicas municipales |
-| DANE SIPSA | Precios mayoristas nacionales |
+| ERA5 / Copernicus   | Variables climáticas reanalizadas                                     |
+| TerriData / DNP     | Variables socioeconómicas municipales                                 |
+| DANE SIPSA          | Precios mayoristas nacionales                                         |
 
 ---
 
@@ -91,6 +91,7 @@ Para cada combinación `municipio + cultivo + periodo` entrega:
 Predice `rendimiento_t_ha` por `municipio + cultivo + año`.
 
 **Variables de entrada permitidas:**
+
 - Rendimiento rezagado: año anterior, promedio 3 años, tendencia.
 - Área sembrada histórica y cambio interanual.
 - Precipitación acumulada, anomalía, días secos.
@@ -118,14 +119,14 @@ No requiere modelo separado. Se calcula combinando rendimiento esperado + percen
 
 Ranking café vs cacao vs maíz por municipio, combinando:
 
-| Factor | Peso |
-|---|---|
-| Rendimiento esperado (XGBoost) | Alto |
-| Riesgo climático (XGBoost Classifier) | Alto |
-| Aptitud UPRA | Medio |
-| Frontera agrícola | Medio |
-| Riesgo económico | Medio |
-| Estabilidad histórica | Bajo |
+| Factor                                | Peso  |
+| ------------------------------------- | ----- |
+| Rendimiento esperado (XGBoost)        | Alto  |
+| Riesgo climático (XGBoost Classifier) | Alto  |
+| Aptitud UPRA                          | Medio |
+| Frontera agrícola                     | Medio |
+| Riesgo económico                      | Medio |
+| Estabilidad histórica                 | Bajo  |
 
 Justificación generada por LLM en lenguaje claro.
 
@@ -145,21 +146,21 @@ Test:       2023–2024  ← no tocar hasta el final
 
 ## Stack tecnológico
 
-| Capa | Herramienta | Rol |
-|---|---|---|
-| Datos | Python + Pandas | Limpieza y construcción de tabla maestra |
-| Datos | DuckDB | Queries SQL sobre Parquet sin servidor |
-| Datos | Parquet | Almacenamiento eficiente de datos históricos |
-| Modelo | XGBoost + scikit-learn | Predicción de rendimiento y clasificación de riesgo |
-| Modelo | SHAP | Explicabilidad de cada predicción |
-| API | FastAPI + uvicorn | Endpoints REST que exponen predicciones al frontend |
-| Base de datos | PostgreSQL | Predicciones calculadas, listas para consultar |
-| Infra | Docker + Docker Compose | Entorno unificado — `docker compose up` levanta todo |
-| Frontend | Next.js 14 (App Router) | Framework principal |
-| Frontend | react-leaflet | Mapa de Colombia coloreado por nivel de riesgo |
-| Frontend | react-plotly.js | Gráficas de rendimiento, tendencia y SHAP |
-| Frontend | shadcn/ui | Componentes UI: selectores, tarjetas, semáforo |
-| Asistente | LLM + RAG | Responde preguntas usando resultados del modelo como contexto |
+| Capa          | Herramienta             | Rol                                                           |
+| ------------- | ----------------------- | ------------------------------------------------------------- |
+| Datos         | Python + Pandas         | Limpieza y construcción de tabla maestra                      |
+| Datos         | DuckDB                  | Queries SQL sobre Parquet sin servidor                        |
+| Datos         | Parquet                 | Almacenamiento eficiente de datos históricos                  |
+| Modelo        | XGBoost + scikit-learn  | Predicción de rendimiento y clasificación de riesgo           |
+| Modelo        | SHAP                    | Explicabilidad de cada predicción                             |
+| API           | FastAPI + uvicorn       | Endpoints REST que exponen predicciones al frontend           |
+| Base de datos | PostgreSQL              | Predicciones calculadas, listas para consultar                |
+| Infra         | Docker + Docker Compose | Entorno unificado — `docker compose up` levanta todo          |
+| Frontend      | Next.js 14 (App Router) | Framework principal                                           |
+| Frontend      | react-leaflet           | Mapa de Colombia coloreado por nivel de riesgo                |
+| Frontend      | react-plotly.js         | Gráficas de rendimiento, tendencia y SHAP                     |
+| Frontend      | shadcn/ui               | Componentes UI: selectores, tarjetas, semáforo                |
+| Asistente     | LLM + RAG               | Responde preguntas usando resultados del modelo como contexto |
 
 ## Módulos del sistema
 
@@ -184,15 +185,15 @@ Test:       2023–2024  ← no tocar hasta el final
                     └─────────────────┘
 ```
 
-| Módulo | Consume | Produce | Endpoint |
-|---|---|---|---|
-| Climático | IDEAM (prec, temp, hum, catálogo) | `SerieClimática(municipio, año, prec_acum, temp_media, hum_media, dias_secos, anomalia_*)` | `GET /clima/{municipio}/{año}` |
-| Agrícola | EVA histórica + reciente | `RendimientoHistórico(municipio, cultivo, año, rendimiento, area_sembrada, tendencia_3a)` | `GET /eva/{municipio}/{cultivo}` |
-| Territorial | UPRA aptitud + frontera | `ZonaAptitud(municipio, cultivo, pct_alta, pct_media, pct_baja, pct_condicionada)` | `GET /aptitud/{municipio}/{cultivo}` |
-| Económico | Agroinsumos + precios RAP | `RiesgoEconómico(fecha, indice_fertilizantes, precio_referencia, señal_riesgo)` | `GET /economia/{cultivo}/{año}` |
-| Predictivo | Tabla maestra (salidas anteriores) | `Predicción(municipio, cultivo, año, rendimiento_esperado, prob_riesgo_alto, etiqueta_riesgo)` | `POST /predecir` |
-| Explicabilidad | Predicción + modelo entrenado | `ExplicaciónSHAP(prediccion_id, factores_ordenados, narrativa_texto)` | `GET /explicar/{prediccion_id}` |
-| Conversacional | Predicción + SHAP (contexto RAG) | `RespuestaGenerada(pregunta, respuesta, reporte_pdf)` | `POST /chat` |
+| Módulo         | Consume                            | Produce                                                                                        | Endpoint                             |
+| -------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Climático      | IDEAM (prec, temp, hum, catálogo)  | `SerieClimática(municipio, año, prec_acum, temp_media, hum_media, dias_secos, anomalia_*)`     | `GET /clima/{municipio}/{año}`       |
+| Agrícola       | EVA histórica + reciente           | `RendimientoHistórico(municipio, cultivo, año, rendimiento, area_sembrada, tendencia_3a)`      | `GET /eva/{municipio}/{cultivo}`     |
+| Territorial    | UPRA aptitud + frontera            | `ZonaAptitud(municipio, cultivo, pct_alta, pct_media, pct_baja, pct_condicionada)`             | `GET /aptitud/{municipio}/{cultivo}` |
+| Económico      | Agroinsumos + precios RAP          | `RiesgoEconómico(fecha, indice_fertilizantes, precio_referencia, señal_riesgo)`                | `GET /economia/{cultivo}/{año}`      |
+| Predictivo     | Tabla maestra (salidas anteriores) | `Predicción(municipio, cultivo, año, rendimiento_esperado, prob_riesgo_alto, etiqueta_riesgo)` | `POST /predecir`                     |
+| Explicabilidad | Predicción + modelo entrenado      | `ExplicaciónSHAP(prediccion_id, factores_ordenados, narrativa_texto)`                          | `GET /explicar/{prediccion_id}`      |
+| Conversacional | Predicción + SHAP (contexto RAG)   | `RespuestaGenerada(pregunta, respuesta, reporte_pdf)`                                          | `POST /chat`                         |
 
 ## Flujo de ejemplo — "¿Cuál es el riesgo para café en Chaparral en 2025?"
 
@@ -245,22 +246,26 @@ siembrasegura/
 # 6. DIFERENCIADORES PARA GANAR
 
 ## Innovación
+
 - Predicción de rendimiento + clasificación de riesgo climático.
 - Simulación de escenarios: año seco (-30% lluvia), año lluvioso (+30%), subida de fertilizantes (+20%).
 - Explicabilidad SHAP visible en el frontend.
 - Asistente generativo que traduce resultados técnicos a lenguaje campesino/institucional.
 
 ## Uso de datos abiertos
+
 Mostrar trazabilidad explícita: "esta predicción usa EVA + IDEAM + UPRA + agroinsumos". Incluir IDs de datasets en la presentación. Datasets mínimos para la demo:
 
 `2pnw-mmge` · `uejq-wxrr` · `s54a-sgyg` · `sbwg-7ju4` · `hp9r-jxuu` · `fyc7-sbtz` · `kwvf-nwea` · `jdjx-qer4` · `frjn-92um` · `gwbi-fnzs`
 
 ## Impacto social
+
 - Enfocar en pequeños productores y municipios rurales vulnerables (PDET).
 - Diseñar para UMATAs y extensionistas, no para científicos de datos.
 - Reportes listos para compartir por WhatsApp o PDF.
 
 ## Escalabilidad
+
 - Agregar cultivos o municipios cambiando configuración, sin tocar el modelo.
 - Actualizar datos vía API Socrata automáticamente.
 
@@ -269,6 +274,7 @@ Mostrar trazabilidad explícita: "esta predicción usa EVA + IDEAM + UPRA + agro
 # 7. ERRORES A EVITAR
 
 ## Técnicos
+
 1. Predecir a nivel finca con datos municipales — los datos EVA son municipales.
 2. Usar `produccion` o `area_cosechada` del mismo año como features — fuga de información.
 3. Split aleatorio en datos temporales — siempre validar por años futuros.
@@ -277,6 +283,7 @@ Mostrar trazabilidad explícita: "esta predicción usa EVA + IDEAM + UPRA + agro
 6. Prometer predicción climática sin fuente de pronóstico — presentar escenarios en su lugar.
 
 ## Estratégicos
+
 1. Hacer solo un dashboard descriptivo — no se percibe como IA aplicada.
 2. No conectar resultados con decisiones reales — el usuario debe saber qué hacer.
 3. Sobrecomplicar con deep learning — un XGBoost bien validado y explicable es más convincente.
@@ -287,77 +294,186 @@ Mostrar trazabilidad explícita: "esta predicción usa EVA + IDEAM + UPRA + agro
 
 # 8. METODOLOGÍA — SPEC-DRIVEN + TASK DECOMPOSITION
 
-Cada módulo se define primero como una spec estructurada con requisitos, inputs, outputs y criterios de aceptación. El agente de IA lee la spec antes de escribir código. Las tareas se descomponen por capa para que puedan ejecutarse en paralelo.
+Cada módulo se define primero como una spec atómica, verificable y con alcance único. El agente de IA lee la spec antes de escribir código. Si un módulo tiene más de un objetivo principal, se divide en varias specs. La estructura base sigue la skill de spec-writer y se organiza como un README de overview + subtareas.
 
-## Estructura de cada spec
+## 8.1 Estructura estándar de cada spec
 
 ```markdown
 # Spec: [Nombre del módulo]
 
+## Metadatos
+
+- ID:
+- Módulo o área:
+- Depende de:
+- Produce para:
+- Estado:
+
+## Agente
+
+- role:
+- goal:
+- backstory:
+
 ## Objetivo
-Qué debe hacer este módulo en una oración.
 
-## Inputs
-- Fuente 1: descripción, formato, columnas relevantes
+- Un único resultado de negocio o técnico que se debe lograr.
 
-## Outputs
-- Archivo/endpoint: formato, columnas, ejemplo de fila
+## Alcance
+
+### Incluye
+
+- Qué sí se hará.
+
+### No incluye
+
+- Qué queda fuera del alcance.
+
+## Entradas
+
+- Información de entrada, archivos, parámetros, dependencias y estado inicial.
+
+## Inputs esperados
+
+- Lista de fuentes, claves, archivos, endpoints o artefactos de entrada.
+- Para cada input, especificar columnas, campos, tipos o reglas mínimas cuando aplique.
+
+## Lógica / Proceso sugerido
+
+1. Paso a paso, en orden claro.
+2. Incluir decisiones y ramas relevantes.
+3. Indicar qué hacer si falta información o si falla una validación.
+
+## Interfaz o contrato
+
+- Función, comando, endpoint, archivo, formato o salida que debe producirse.
+
+## Manejo de errores
+
+- Qué falla de forma explícita.
+- Qué se registra como warning.
+- Qué mensajes de error deben quedar visibles.
+
+## Salida esperada
+
+- Entregable concreto y verificable.
+- Formato de salida si aplica.
+
+## Caso feliz
+
+- Dado una entrada válida
+- Cuando se ejecuta la tarea
+- Entonces se obtiene la salida esperada
+
+## Validación
+
+- Dado una entrada inválida o incompleta
+- Cuando se ejecuta la tarea
+- Entonces se rechaza con un error claro y accionable
 
 ## Criterios de aceptación
-- [ ] El output tiene las columnas X, Y, Z
-- [ ] Los 15 municipios del MVP están presentes
-- [ ] Tiempo de ejecución < N segundos
+
+- Claridad
+- Atomicidad
+- Trazabilidad
+- Verificabilidad
+
+## Regla de división
+
+- Si el spec tiene más de un objetivo principal, dividirlo.
+- Si requiere múltiples entregables no acoplados, dividirlo.
+- Si no puede validarse en una sola revisión razonable, dividirlo.
 
 ## Restricciones técnicas
-- Usar shared/socrata_client.py — nunca sodapy
-- Normalizar con shared/dane_codes.py y shared/normalization.py
+
+- Usar `shared/socrata_client.py` — nunca `sodapy`.
+- Normalizar con `shared/dane_codes.py` y `shared/normalization.py`.
+- Mantener compatibilidad con los contratos definidos en `specs/`.
 
 ## Dependencias
-- Requiere: shared/socrata_client.py, shared/dane_codes.py
-- Produce para: módulo predictivo (feature_builder.py)
+
+- Requiere: `shared/socrata_client.py`, `shared/dane_codes.py`.
+- Produce para: módulo predictivo (`feature_builder.py`).
 ```
 
-## Descomposición de tareas
+## 8.2 Estructura modular recomendada
+
+Cuando el trabajo tenga varios pasos o entregables, cada área debe seguir esta forma:
+
+1. README de overview con el contexto general, dependencias compartidas y tabla de subtareas.
+2. Una spec por subtarea técnica o funcional.
+3. Validación al final de cada spec antes de pasar a la siguiente.
+
+### README de overview
+
+Debe incluir:
+
+- Resumen corto.
+- Contexto del dominio.
+- Tabla de subtareas con ID, archivo, qué hace, depende de y estado.
+- Outputs finales.
+- Esquema o contrato global si aplica.
+- Dependencias compartidas.
+- Restricciones técnicas comunes.
+- Produce para.
+
+### Subtareas
+
+Cada subtarea debe seguir la estructura estándar anterior y cubrir un único objetivo principal.
+
+### Regla operativa
+
+- Dividir por etapas lógicas: ingesta, transformación, validación, guardado.
+- Aceptar dependencias lineales o paralelas según corresponda.
+- Si una subtarea tiene más de un objetivo, volver a dividirla.
+
+## 8.3 Descomposición de tareas del proyecto
 
 ### Semana 1 — Datos
 
-| ID | Tarea | Entregable |
-|----|-------|-----------|
-| D1 | ✅ Pipeline EVA: descargar histórica + reciente, unificar columnas | `eva_historica.parquet`, `eva_reciente.parquet` |
-| D2 | ✅ Pipeline Clima: estaciones IDEAM, precipitación + temperatura agregadas, anomalías | `clima_agregado.parquet` |
-| D3 | ✅ Pipeline UPRA: aptitud café/cacao/maíz + frontera agrícola (GROUP BY SoQL) | 4 archivos Parquet |
-| D4 | ✅ Pipeline Económico: agroinsumos + percentil histórico | `agroinsumos.parquet` |
-| D5 | ✅ Tabla maestra: cruzar D1-D4 por municipio/cultivo/año, features rezagadas | `tabla_maestra.parquet` |
+| ID  | Tarea                                                                                 | Entregable                                      |
+| --- | ------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| D1  | ✅ Pipeline EVA: descargar histórica + reciente, unificar columnas                    | `eva_historica.parquet`, `eva_reciente.parquet` |
+| D2  | ✅ Pipeline Clima: estaciones IDEAM, precipitación + temperatura agregadas, anomalías | `clima_agregado.parquet`                        |
+| D3  | ✅ Pipeline UPRA: aptitud café/cacao/maíz + frontera agrícola (GROUP BY SoQL)         | 4 archivos Parquet                              |
+| D4  | ✅ Pipeline Económico: agroinsumos + percentil histórico                              | `agroinsumos.parquet`                           |
+| D5  | ✅ Tabla maestra: cruzar D1-D4 por municipio/cultivo/año, features rezagadas          | `tabla_maestra.parquet`                         |
 
 ### Semana 2 — Modelo
 
-| ID | Tarea | Entregable |
-|----|-------|-----------|
-| M1 | Feature engineering: variables climáticas, rezagos, aptitud, riesgo económico | Features validadas |
-| M2 | XGBoost Regressor por cultivo, split temporal, métricas MAE/RMSE/R² | 3 modelos `.pkl` + métricas |
-| M3 | XGBoost Classifier de riesgo, etiqueta caída > 15%, métricas F1/AUC | 3 modelos `.pkl` + métricas |
-| M4 | SHAP values, top 5 features por predicción, plantillas de narrativa | SHAP values + narrativas |
-| M5 | Simulación de escenarios: año seco, lluvioso, subida fertilizantes | Función de escenarios |
+| ID  | Tarea                                                                         | Entregable                  |
+| --- | ----------------------------------------------------------------------------- | --------------------------- |
+| M1  | Feature engineering: variables climáticas, rezagos, aptitud, riesgo económico | Features validadas          |
+| M2  | XGBoost Regressor por cultivo, split temporal, métricas MAE/RMSE/R²           | 3 modelos `.pkl` + métricas |
+| M3  | XGBoost Classifier de riesgo, etiqueta caída > 15%, métricas F1/AUC           | 3 modelos `.pkl` + métricas |
+| M4  | SHAP values, top 5 features por predicción, plantillas de narrativa           | SHAP values + narrativas    |
+| M5  | Simulación de escenarios: año seco, lluvioso, subida fertilizantes            | Función de escenarios       |
 
 ### Semana 3 — API y Frontend
 
-| ID | Tarea | Entregable |
-|----|-------|-----------|
-| A1 | `POST /predecir`, `GET /municipios`, `GET /cultivos/{municipio}` | Endpoints funcionales |
-| A2 | `GET /rendimiento/{municipio}/{cultivo}`, `GET /clima/{municipio}` | Endpoints funcionales |
-| A3 | `POST /escenario`, `POST /chat`, `GET /reporte/{municipio}/{cultivo}` | Endpoints funcionales |
-| F1 | Mapa Colombia con react-leaflet, color por riesgo, filtro por cultivo | Pantalla mapa |
-| F2 | Ficha municipal: gráfica histórica, semáforo, barras SHAP, recomendación | Pantalla ficha |
-| F3 | Comparador de cultivos: tabla rendimiento/riesgo/aptitud, ranking | Pantalla comparador |
+| ID  | Tarea                                                                    | Entregable            |
+| --- | ------------------------------------------------------------------------ | --------------------- |
+| A1  | `POST /predecir`, `GET /municipios`, `GET /cultivos/{municipio}`         | Endpoints funcionales |
+| A2  | `GET /rendimiento/{municipio}/{cultivo}`, `GET /clima/{municipio}`       | Endpoints funcionales |
+| A3  | `POST /escenario`, `POST /chat`, `GET /reporte/{municipio}/{cultivo}`    | Endpoints funcionales |
+| F1  | Mapa Colombia con react-leaflet, color por riesgo, filtro por cultivo    | Pantalla mapa         |
+| F2  | Ficha municipal: gráfica histórica, semáforo, barras SHAP, recomendación | Pantalla ficha        |
+| F3  | Comparador de cultivos: tabla rendimiento/riesgo/aptitud, ranking        | Pantalla comparador   |
 
 ### Semana 4 — Conversacional y demo
 
-| ID | Tarea | Entregable |
-|----|-------|-----------|
-| C1 | RAG: indexar predicciones + SHAP, función de recuperación por municipio/cultivo | Motor RAG |
-| C2 | Prompts: lenguaje campesino, reporte institucional UMATA, comparación cultivos | Plantillas de prompt |
-| C3 | Generador de reportes PDF por municipio | Generador de reportes |
-| F4 | Chat interface shadcn/ui + integración `/chat` + botón "Generar reporte" | Pantalla asistente |
+| ID  | Tarea                                                                           | Entregable            |
+| --- | ------------------------------------------------------------------------------- | --------------------- |
+| C1  | RAG: indexar predicciones + SHAP, función de recuperación por municipio/cultivo | Motor RAG             |
+| C2  | Prompts: lenguaje campesino, reporte institucional UMATA, comparación cultivos  | Plantillas de prompt  |
+| C3  | Generador de reportes PDF por municipio                                         | Generador de reportes |
+| F4  | Chat interface shadcn/ui + integración `/chat` + botón "Generar reporte"        | Pantalla asistente    |
+
+## 8.4 Criterio de uso
+
+- Antes de escribir código, leer la spec correspondiente y verificar que tenga objetivo único, entradas, salidas y criterios de aceptación.
+- Si la tarea afecta más de un módulo, crear una spec por módulo antes de implementar.
+- La spec debe permitir validar el resultado con una revisión objetiva y repetible.
 
 ---
 
@@ -365,20 +481,20 @@ Qué debe hacer este módulo en una oración.
 
 15 municipios seleccionados con cobertura en las 7 fuentes: EVA + IDEAM (prec+temp+hum) + UPRA (café+cacao+maíz+frontera) + Agroinsumos.
 
-| Municipio | Departamento | Código DANE | Est. IDEAM | PDET |
-|-----------|-------------|------------|-----------|------|
-| Ibagué | Tolima | `73001` | 20 | — |
-| Chaparral | Tolima | `73168` | 13 | ✅ |
-| Neiva | Huila | `41001` | 10 | — |
-| Garzón | Huila | `41298` | 9 | — |
-| Pitalito | Huila | `41551` | 6 | — |
-| San Vicente de Chucurí | Santander | `68689` | 12 | — |
-| Rionegro | Santander | `68615` | 19 | — |
-| Anorí | Antioquia | `05036` | 14 | ✅ |
-| Amalfi | Antioquia | `05030` | 12 | — |
-| Pensilvania | Caldas | `17541` | 20 | — |
-| Palestina | Caldas | `17524` | 13 | — |
-| Villavicencio | Meta | `50001` | 15 | — |
-| El Tambo | Cauca | `19256` | 12 | ✅ |
-| Miranda | Cauca | `19418` | 12 | — |
-| Valledupar | Cesar | `20001` | 14 | — |
+| Municipio              | Departamento | Código DANE | Est. IDEAM | PDET |
+| ---------------------- | ------------ | ----------- | ---------- | ---- |
+| Ibagué                 | Tolima       | `73001`     | 20         | —    |
+| Chaparral              | Tolima       | `73168`     | 13         | ✅   |
+| Neiva                  | Huila        | `41001`     | 10         | —    |
+| Garzón                 | Huila        | `41298`     | 9          | —    |
+| Pitalito               | Huila        | `41551`     | 6          | —    |
+| San Vicente de Chucurí | Santander    | `68689`     | 12         | —    |
+| Rionegro               | Santander    | `68615`     | 19         | —    |
+| Anorí                  | Antioquia    | `05036`     | 14         | ✅   |
+| Amalfi                 | Antioquia    | `05030`     | 12         | —    |
+| Pensilvania            | Caldas       | `17541`     | 20         | —    |
+| Palestina              | Caldas       | `17524`     | 13         | —    |
+| Villavicencio          | Meta         | `50001`     | 15         | —    |
+| El Tambo               | Cauca        | `19256`     | 12         | ✅   |
+| Miranda                | Cauca        | `19418`     | 12         | —    |
+| Valledupar             | Cesar        | `20001`     | 14         | —    |
