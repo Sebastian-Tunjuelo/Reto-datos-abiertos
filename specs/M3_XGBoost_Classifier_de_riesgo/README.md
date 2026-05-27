@@ -10,12 +10,12 @@ Más allá de predecir un valor exacto de rendimiento, la plataforma necesita un
 
 ## Subtareas
 
-| ID   | Archivo                                                                  | Qué hace                               | Depende de | Estado       |
-| ---- | ------------------------------------------------------------------------ | -------------------------------------- | ---------- | ------------ |
-| M3.1 | [M3.1_construccion_target.md](M3.1_construccion_target.md)               | Construye la variable `target_riesgo`  | M1         | ⏳ Pendiente |
-| M3.2 | [M3.2_entrenamiento_clasificador.md](M3.2_entrenamiento_clasificador.md) | Entrena XGBoost Classifier por cultivo | M3.1       | ⏳ Pendiente |
-| M3.3 | [M3.3_evaluacion_y_guardado.md](M3.3_evaluacion_y_guardado.md)           | Calcula métricas y guarda artefactos   | M3.2       | ⏳ Pendiente |
-| M3.4 | [M3.4_validacion.md](M3.4_validacion.md)                                 | Script de validación independiente     | M3.3       | ⏳ Pendiente |
+| ID   | Archivo                                                                  | Qué hace                               | Depende de | Estado          |
+| ---- | ------------------------------------------------------------------------ | -------------------------------------- | ---------- | --------------- |
+| M3.1 | [M3.1_construccion_target.md](M3.1_construccion_target.md)               | Construye la variable `target_riesgo`  | M1         | ✅ Implementado |
+| M3.2 | [M3.2_entrenamiento_clasificador.md](M3.2_entrenamiento_clasificador.md) | Entrena XGBoost Classifier por cultivo | M3.1       | ✅ Implementado |
+| M3.3 | [M3.3_evaluacion_y_guardado.md](M3.3_evaluacion_y_guardado.md)           | Calcula métricas y guarda artefactos   | M3.2       | ✅ Implementado |
+| M3.4 | [M3.4_validacion.md](M3.4_validacion.md)                                 | Script de validación independiente     | M3.3       | ✅ Implementado |
 
 ## Outputs finales
 

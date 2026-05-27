@@ -265,11 +265,16 @@ COLUMNAS_EVA = [
 | D5.4 | `specs/D5_tabla_maestra/D5.4_validacion.md`                                | ✅ Completo | `specs/D5_tabla_maestra/validate_d5.py → run_validations()`                                               |
 | M1.1 | `specs/M1_feature_engineering/M1.1_validacion_entrada_clima.md`            | ✅ Completo | `modules/predictive/feature_builder.py → _validate_input()` + `_apply_climate_ranges()`                   |
 | M1.2 | `specs/M1_feature_engineering/M1.2_rezagos_temporales.md`                  | ✅ Completo | `modules/predictive/feature_builder.py → _build_lag_features()`                                           |
-| M1.3 | `specs/M1_feature_engineering/M1.3_aptitud_agroinsumos_schema.md`          | ✅ Completo | `modules/predictive/feature_builder.py → build_feature_matrix()`                                          |     | M1.4 | `specs/M1_feature_engineering/M1.4_validacion.md` | ✅ Completo | `specs/M1_feature_engineering/validate_m1.py → run_validations()` |
+| M1.3 | `specs/M1_feature_engineering/M1.3_aptitud_agroinsumos_schema.md`          | ✅ Completo | `modules/predictive/feature_builder.py → build_feature_matrix()`                                          |
+| M1.4 | `specs/M1_feature_engineering/M1.4_validacion.md`                          | ✅ Completo | `specs/M1_feature_engineering/validate_m1.py → run_validations()`                                         |
 | M2.1 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.1_carga_validacion_features.md` | ✅ Completo | `modules/predictive/train_regressor.py → load_feature_matrix()`, `prepare_regression_frame()`             |
 | M2.2 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.2_entrenamiento_por_cultivo.md` | ✅ Completo | `modules/predictive/train_regressor.py → train_regressors()`, `_train_single_cultivo()`                   |
 | M2.3 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.3_evaluacion_y_guardado.md`     | ✅ Completo | `modules/predictive/train_regressor.py → evaluate_and_save_metrics()`                                     |
 | M2.4 | `specs/M2_XGBoost_Regressor_por_cultivo/M2.4_validacion.md`                | ✅ Completo | `specs/M2_XGBoost_Regressor_por_cultivo/validate_m2.py → run_validation()`                                |
+| M3.1 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.1_construccion_target.md`        | ✅ Completo | `modules/predictive/target_riesgo.py → build_target_riesgo()`                                             |
+| M3.2 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.2_entrenamiento_clasificador.md` | ✅ Completo | `modules/predictive/train_classifier.py → train_classifiers()`, `_train_single_cultivo_classifier()`      |
+| M3.3 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.3_evaluacion_y_guardado.md`      | ✅ Completo | `modules/predictive/train_classifier.py → evaluate_and_save_metrics()`                                    |
+| M3.4 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.4_validacion.md`                 | ✅ Completo | `specs/M3_XGBoost_Classifier_de_riesgo/validate_m3.py → run_validations()`                                |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
