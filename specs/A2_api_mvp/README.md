@@ -18,9 +18,9 @@ No incluye predicción, SHAP, escenarios, chat ni persistencia.
 
 | ID   | Archivo                                                        | Qué hace                                 | Depende de                                                                                                                              | Estado      |
 | ---- | -------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| A2.1 | [A2.1_rendimiento_historico.md](A2.1_rendimiento_historico.md) | `GET /rendimiento/{municipio}/{cultivo}` | `modules/agricultural/ingestion.py`, `data/eva_completa.parquet`, `shared/config.py`, `shared/dane_codes.py`, `shared/normalization.py` | 📝 Borrador |
-| A2.2 | [A2.2_clima_municipio.md](A2.2_clima_municipio.md)             | `GET /clima/{municipio}`                 | `modules/climate/ingestion.py`, `data/clima_agregado.parquet`, `shared/config.py`, `shared/dane_codes.py`, `shared/normalization.py`    | 📝 Borrador |
-| A2.3 | [A2.3_validacion.md](A2.3_validacion.md)                       | Validación del contrato A2               | A2.1 + A2.2 + artefactos EVA/IDEAM                                                                                                      | 📝 Borrador |
+| A2.1 | [A2.1_rendimiento_historico.md](A2.1_rendimiento_historico.md) | `GET /rendimiento/{municipio}/{cultivo}` | `modules/agricultural/ingestion.py`, `data/eva_completa.parquet`, `shared/config.py`, `shared/dane_codes.py`, `shared/normalization.py` | ✅ Completo |
+| A2.2 | [A2.2_clima_municipio.md](A2.2_clima_municipio.md)             | `GET /clima/{municipio}`                 | `modules/climate/ingestion.py`, `data/clima_agregado.parquet`, `shared/config.py`, `shared/dane_codes.py`, `shared/normalization.py`    | ✅ Completo |
+| A2.3 | [A2.3_validacion.md](A2.3_validacion.md)                       | Validación del contrato A2               | A2.1 + A2.2 + artefactos EVA/IDEAM                                                                                                      | ✅ Completo |
 
 > A2.1 y A2.2 pueden implementarse en paralelo. A2.3 valida la API completa una vez exista la capa funcional.
 

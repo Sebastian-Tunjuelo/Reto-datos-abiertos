@@ -399,5 +399,5 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
 | `modules/explainability/`           | ✅ M4 Completo (SHAP validado y extractor de características funcionando)                                                                                                   |
 | `modules/conversational/`           | 🔲 Por implementar                                                                                                                                                          |
-| `orchestrator/`                     | ✅ A1 Especificaciones API MVP Implementadas                                                                                                                                |
+| `orchestrator/`                     | ✅ A1 Completa, A2 Completa                                                                                                                                                 |
 | `frontend/`                         | 🔲 Por implementar                                                                                                                                                          |
