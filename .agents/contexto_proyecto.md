@@ -279,6 +279,7 @@ COLUMNAS_EVA = [
 | M4.2 | `specs/M4_Explicabilidad_SHAP/M4.2_top_features.md`                        | ✅ Completo | `modules/explainability/feature_extractor.py → get_top_n_features()`                                      |
 | M4.3 | `specs/M4_Explicabilidad_SHAP/M4.3_narrativas.md`                          | ✅ Completo | `modules/explainability/narrative_builder.py → build_and_save_narratives_df()`                            |
 | M4.4 | `specs/M4_Explicabilidad_SHAP/M4.4_validacion.md`                          | ✅ Completo | `specs/M4_Explicabilidad_SHAP/validate_m4.py → validate_m4()`                                             |
+| M5.1 | `specs/M5_simulacion_escenarios/M5.1_funcion_escenarios.md`                | ✅ Completo | `modules/predictive/scenarios.py → simulate_scenarios()` + `validate_m5.py`                               |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -395,8 +396,8 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/territorial/__init__.py`   | ✅ Expone `download_aptitud_cafe`, `download_aptitud_cacao`, `download_aptitud_maiz`, `download_frontera`                                                                   |
 | `modules/territorial/ingestion.py`  | ✅ D3.1 completo — `download_aptitud_cafe()` + `download_aptitud_cacao()` / ✅ D3.2 completo — `download_aptitud_maiz()` / ✅ D3.3 completo — `download_frontera()`         |
 | `modules/economic/`                 | ✅ D4.1–D4.3 completos (ingestion + validacion)                                                                                                                             |
-| `modules/predictive/`               | ✅ D5.1–D5.4, M1.1-M1.4 y M2.1-M2.4 completos                                                                                                                               |
-| `modules/explainability/`           | 🔲 Por implementar                                                                                                                                                          |
+| `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
+| `modules/explainability/`           | ✅ M4 Completo (SHAP validado y extractor de características funcionando)                                                                                                   |
 | `modules/conversational/`           | 🔲 Por implementar                                                                                                                                                          |
 | `orchestrator/`                     | 🔲 Por implementar                                                                                                                                                          |
 | `frontend/`                         | 🔲 Por implementar                                                                                                                                                          |
