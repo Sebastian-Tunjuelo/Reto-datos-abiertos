@@ -398,7 +398,68 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/territorial/ingestion.py`  | ✅ D3.1 completo — `download_aptitud_cafe()` + `download_aptitud_cacao()` / ✅ D3.2 completo — `download_aptitud_maiz()` / ✅ D3.3 completo — `download_frontera()`         |
 | `modules/economic/`                 | ✅ D4.1–D4.3 completos (ingestion + validacion)                                                                                                                             |
 | `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
-| `modules/explainability/`           | ✅ M4 Completo (SHAP validado y extractor de características funcionando)                                                                                                   |
-| `modules/conversational/`           | 🔲 Por implementar                                                                                                                                                          |
-| `orchestrator/`                     | ✅ A1 Completa, A2 Completa, A3.1 Completa                                                                                                                                  |
+| `modules/explainability/`           | ✅ M4 Completo — SHAP validado, `predicciones_con_explicacion.parquet` generado (395 registros). Pipeline ejecutable vía `scripts/run_m4_pipeline.py`. |
+| `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`                                               |
+| `orchestrator/`                     | ✅ A1–A3 Completas. Bug fix en `POST /predecir`: features leídas del booster + `señal_riesgo_economico` mapeada a encoded.                                                  |
 | `frontend/`                         | 🔲 Por implementar                                                                                                                                                          |
+
+---
+
+## Estado verificado del backend (verificación 2025)
+
+### Endpoints — resultado de pruebas reales
+
+| Endpoint | Estado | Notas |
+|---|---|---|
+| `GET /municipios` | ✅ | 15 municipios, datos correctos |
+| `GET /cultivos/{municipio}` | ✅ | Devuelve Café, Cacao, Maíz |
+| `GET /rendimiento/{municipio}/{cultivo}` | ✅ | Serie histórica con rezagos |
+| `GET /clima/{municipio}` | ✅ | Responde; mayoría de municipios con nulls (ver limitación) |
+| `POST /predecir` | ✅ | Funcional tras bug fix |
+| `POST /escenario` | ✅ | Responde; deltas ≈ 0 para municipios sin datos climáticos |
+| `GET /reporte/{municipio}/{cultivo}` | ✅ | Formatos `texto` y `pdf` |
+| `POST /chat` | ✅ | Google Gemini `gemini-2.0-flash`; fallback automático si cuota agotada |
+
+### Bug fix aplicado en `orchestrator/main.py`
+
+El endpoint `POST /predecir` fallaba por dos razones:
+1. Leía `features` del meta JSON (campo vacío en los `.json` guardados) — corregido a leer features directamente del booster con `regressor.get_booster().feature_names`
+2. `señal_riesgo_economico` es `object/None` en la feature_matrix — corregido mapeando a `señal_riesgo_economico_encoded` (int64) antes de construir el vector de predicción
+
+### LLM — Google Gemini
+
+```
+Proveedor : Google Gemini
+Modelo    : gemini-2.0-flash
+Librería  : google-generativeai==0.8.3
+Variable  : LLM_API_KEY en .env
+Fallback  : respuesta local basada en RAG si Gemini falla o cuota agotada
+```
+
+> ⚠️ La API key tiene límite de requests/día en el free tier. Cuando se agota, el endpoint `/chat` devuelve la respuesta del fallback local (sin LLM) con HTTP 200.
+
+### Limitaciones de datos conocidas
+
+- **Clima escaso**: solo 10 de 15 municipios tienen datos climáticos, y solo para 2023-2024. La mayoría de filas tienen `prec_acum_mm`, `temp_media_c` etc. en NaN. El modelo fue entrenado con estos NaN, por lo que los escenarios climáticos (seco/lluvioso) producen delta ≈ 0.
+- **Escenarios climáticos sin efecto real**: los deltas de rendimiento en `/escenario` son 0 para la mayoría de municipios. Solo el escenario `fertilizantes` puede tener efecto si `indice_agroinsumos` tiene valor.
+
+### Columnas reales de `predicciones_con_explicacion.parquet`
+
+```
+codigo_dane, municipio, departamento, cultivo, año,
+prec_acum_mm, anomalia_prec, temp_media_c, anomalia_temp, dias_secos, hum_media_pct,
+rendimiento_t1, rendimiento_prom3a, tendencia_rend_3a, area_sembrada_t1,
+pct_alta, pct_media, pct_baja, pct_exclusion, pct_condicionada, pct_no_condicionada,
+indice_agroinsumos, percentil_fertilizantes,
+señal_riesgo_economico (object/None), señal_riesgo_economico_encoded (int64),
+target_rendimiento, prediccion_riesgo, top_features, narrativa_riesgo
+```
+
+> ⚠️ No tiene `rendimiento_esperado` ni `etiqueta_riesgo` — usa `rendimiento_t1` y `prediccion_riesgo`. El RAG mapea correctamente estas columnas.
+
+### Cómo levantar la API localmente
+
+```bash
+.\.venv\Scripts\python.exe -m uvicorn orchestrator.main:app --host 0.0.0.0 --port 8000
+# Docs interactivas: http://localhost:8000/docs
+```

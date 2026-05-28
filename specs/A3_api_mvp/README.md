@@ -18,10 +18,10 @@ Este bloque orquesta artefactos ya producidos por M1 a M5. No entrena modelos ni
 
 | ID   | Archivo                                  | Qué hace                             | Depende de                                                                                                                     | Estado      |
 | ---- | ---------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| A3.1 | [A3.1_escenario.md](A3.1_escenario.md)   | `POST /escenario`                    | M1, M2, M3, M5, `data/feature_matrix.parquet`, `models/xgb_regressor_*.pkl`, `models/xgb_classifier_*.pkl`, shared/\*          | 📝 Borrador |
-| A3.2 | [A3.2_chat.md](A3.2_chat.md)             | `POST /chat`                         | `docs/dominio/glosario_agricola.md`, `data/predicciones_con_explicacion.parquet`, M4, `modules/conversational/*`, shared/\*    | 📝 Borrador |
-| A3.3 | [A3.3_reporte.md](A3.3_reporte.md)       | `GET /reporte/{municipio}/{cultivo}` | A2, A3.1, A3.2, `data/predicciones_con_explicacion.parquet`, `modules/conversational/*`, `modules/explainability/*`, shared/\* |
-| A3.4 | [A3.4_validacion.md](A3.4_validacion.md) | Validación del contrato A3           | A3.1, A3.2, A3.3, artefactos M4/M5, `data/predicciones_con_explicacion.parquet`                                                | 📝 Borrador |
+| A3.1 | [A3.1_escenario.md](A3.1_escenario.md)   | `POST /escenario`                    | M1, M2, M3, M5, `data/feature_matrix.parquet`, `models/xgb_regressor_*.pkl`, `models/xgb_classifier_*.pkl`, shared/\*          | ✅ Completo |
+| A3.2 | [A3.2_chat.md](A3.2_chat.md)             | `POST /chat`                         | `docs/dominio/glosario_agricola.md`, `data/predicciones_con_explicacion.parquet`, M4, `modules/conversational/*`, shared/\*    | ✅ Completo |
+| A3.3 | [A3.3_reporte.md](A3.3_reporte.md)       | `GET /reporte/{municipio}/{cultivo}` | A2, A3.1, A3.2, `data/predicciones_con_explicacion.parquet`, `modules/conversational/*`, `modules/explainability/*`, shared/\* | ✅ Completo |
+| A3.4 | [A3.4_validacion.md](A3.4_validacion.md) | Validación del contrato A3           | A3.1, A3.2, A3.3, artefactos M4/M5, `data/predicciones_con_explicacion.parquet`                                                | ✅ Completo |
 
 > A3.1 puede arrancar en paralelo con A3.2 y A3.3 si ya existe la capa común de normalización y orquestación. A3.4 valida el bloque completo cuando los tres contratos estén expuestos.
 

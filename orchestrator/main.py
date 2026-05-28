@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, field_validator
 from typing import List, Optional
 import pandas as pd
 import joblib
 import json
+import logging
 
 from modules.agricultural.ingestion import load_eva_completa
 from modules.climate.ingestion import load_clima_agregado
@@ -13,6 +15,8 @@ from modules.predictive.scenarios import simulate_scenarios, SCENARIO_CATALOG
 from shared.dane_codes import MVP_CODIGOS, DANE_TO_NAME, DANE_TO_DEPT, get_codigo
 from shared.normalization import normalize_dane_code, normalize_cultivo, normalize_name
 from shared.config import CULTIVOS_MVP, UMBRAL_RIESGO_MEDIO, UMBRAL_RIESGO_ALTO, DATA_DIR, MODELS_DIR
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SiembraSegura IA API", version="1.0.0")
 
@@ -106,6 +110,69 @@ class SerieClimaticaResponse(BaseModel):
     año_min: int
     año_max: int
     serie: List[SerieClimaticaData]
+
+
+class ChatRequest(BaseModel):
+    pregunta: str
+    municipio: Optional[str] = None
+    cultivo: Optional[str] = None
+    año: Optional[int] = None
+    escenario: Optional[str] = None
+    tono: Optional[str] = "campesino"
+    
+    @field_validator("pregunta")
+    @classmethod
+    def validar_pregunta(cls, v):
+        if not v or not v.strip():
+            raise ValueError("La pregunta no puede estar vacía")
+        return v.strip()
+    
+    @field_validator("cultivo")
+    @classmethod
+    def validar_cultivo(cls, v):
+        if v is None:
+            return v
+        cultivo_norm = normalize_cultivo(v)
+        if cultivo_norm is None:
+            raise ValueError("Cultivo inválido. Valores permitidos: Café, Cacao, Maíz")
+        return cultivo_norm
+    
+    @field_validator("año")
+    @classmethod
+    def validar_año(cls, v):
+        if v is None:
+            return v
+        if v < 2000 or v > 2100:
+            raise ValueError("Año de contexto inválido")
+        return v
+    
+    @field_validator("escenario")
+    @classmethod
+    def validar_escenario(cls, v):
+        if v is None:
+            return v
+        escenarios_validos = ["base", "seco", "lluvioso", "fertilizantes"]
+        if v.lower() not in escenarios_validos:
+            raise ValueError("Escenario inválido. Valores permitidos: base, seco, lluvioso, fertilizantes")
+        return v.lower()
+    
+    @field_validator("tono")
+    @classmethod
+    def validar_tono(cls, v):
+        if v is None:
+            return "campesino"
+        tonos_validos = ["campesino", "institucional"]
+        if v.lower() not in tonos_validos:
+            raise ValueError("Tono inválido. Valores permitidos: campesino, institucional")
+        return v.lower()
+
+
+class ChatResponse(BaseModel):
+    respuesta: str
+    tono_aplicado: str
+    contexto_usado: dict
+    fuentes: List[str]
+    reporte_disponible: bool
 
 @app.get("/municipios", response_model=List[MunicipioItem])
 def get_municipios():
@@ -354,23 +421,41 @@ def predecir(req: PrediccionRequest):
         reg_meta = json.load(f)
     with open(clf_meta_path, "r", encoding="utf-8") as f:
         clf_meta = json.load(f)
-        
-    reg_features = reg_meta.get("features", [])
-    clf_features = clf_meta.get("features", [])
+
+    regressor = joblib.load(reg_model_path)
+    classifier = joblib.load(clf_model_path)
+
+    # Leer features directamente del booster (fuente de verdad)
+    reg_features = regressor.get_booster().feature_names or reg_meta.get("feature_cols", reg_meta.get("features", []))
+    clf_features = classifier.get_booster().feature_names or clf_meta.get("feature_cols", clf_meta.get("features", []))
     
     row_dict = last_row.to_dict()
     row_dict["año"] = req.año
     
+    # señal_riesgo_economico en la feature_matrix es object (None); el regresor
+    # fue entrenado con esa columna pero XGBoost la trató como 0.
+    # Usamos la versión encoded (int) para ambos modelos.
+    row_dict["señal_riesgo_economico"] = row_dict.get("señal_riesgo_economico_encoded", 0) or 0
+    
     def build_vector(feats):
-        return [row_dict.get(feat, 0) for feat in feats]
+        import math
+        result = []
+        for feat in feats:
+            val = row_dict.get(feat, 0)
+            try:
+                if val is None or (isinstance(val, float) and math.isnan(val)):
+                    val = 0
+            except Exception:
+                val = 0
+            if not isinstance(val, (int, float, bool)):
+                val = 0
+            result.append(val)
+        return result
 
     X_reg = pd.DataFrame([build_vector(reg_features)], columns=reg_features)
     X_clf = pd.DataFrame([build_vector(clf_features)], columns=clf_features)
     
-    regressor = joblib.load(reg_model_path)
     rend_esperado = float(regressor.predict(X_reg)[0])
-    
-    classifier = joblib.load(clf_model_path)
     probas = classifier.predict_proba(X_clf)[0]
     
     classes_ = getattr(classifier, "classes_", [0, 1, 2])
@@ -486,4 +571,158 @@ def post_escenario(req: EscenarioRequest):
         año=req.año,
         escenarios_solicitados=esc_limpios,
         resultados=resultados
+    )
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(req: ChatRequest):
+    """
+    Endpoint conversacional que responde preguntas en lenguaje natural
+    usando contexto recuperado de predicciones, SHAP y glosario agrícola.
+    """
+    # Validar municipio si se proporciona
+    codigo_norm = None
+    if req.municipio:
+        if str(req.municipio).isdigit():
+            codigo_norm = normalize_dane_code(req.municipio)
+        else:
+            codigo_norm = get_codigo(req.municipio)
+        
+        if not codigo_norm or codigo_norm not in MVP_CODIGOS:
+            raise HTTPException(status_code=404, detail="Municipio no encontrado en el MVP")
+    
+    # Validar que el cultivo esté en CULTIVOS_MVP
+    if req.cultivo and req.cultivo not in CULTIVOS_MVP:
+        raise HTTPException(status_code=422, detail="Cultivo inválido. Valores permitidos: Café, Cacao, Maíz")
+    
+    # Importar motor de chat (lazy import para evitar errores si OpenAI no está configurado)
+    try:
+        from modules.conversational.chat_engine import get_chat_engine, ChatEngine
+    except ImportError as e:
+        logger.error(f"Error importando módulo conversacional: {e}")
+        raise HTTPException(status_code=503, detail="Contexto conversacional no disponible")
+    
+    # Obtener motor de chat
+    try:
+        engine = get_chat_engine()
+    except ValueError as e:
+        logger.error(f"Error inicializando motor de chat: {e}")
+        raise HTTPException(status_code=503, detail="Contexto conversacional no disponible")
+    except Exception as e:
+        logger.error(f"Error inesperado en motor de chat: {e}")
+        raise HTTPException(status_code=502, detail="Error al generar la respuesta conversacional")
+    
+    # Generar respuesta
+    try:
+        resultado = engine.chat(
+            pregunta=req.pregunta,
+            municipio=req.municipio,
+            cultivo=req.cultivo,
+            año=req.año,
+            escenario=req.escenario,
+            tono=req.tono if req.tono else "campesino"
+        )
+        
+        return ChatResponse(
+            respuesta=resultado["respuesta"],
+            tono_aplicado=resultado["tono_aplicado"],
+            contexto_usado=resultado["contexto_usado"],
+            fuentes=resultado["fuentes"],
+            reporte_disponible=resultado["reporte_disponible"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en endpoint de chat: {e}")
+        raise HTTPException(status_code=502, detail="Error al generar la respuesta conversacional")
+
+
+@app.get("/reporte/{municipio}/{cultivo}")
+def get_reporte(municipio: str, cultivo: str, formato: str = "pdf"):
+    """
+    Genera un reporte descargable para un municipio y cultivo del MVP.
+    
+    - formato=pdf (por defecto): retorna un PDF descargable.
+    - formato=texto: retorna JSON con el contenido textual estructurado.
+    """
+    # 1. Validar formato
+    formatos_validos = {"pdf", "texto"}
+    if formato.lower() not in formatos_validos:
+        raise HTTPException(
+            status_code=422,
+            detail="Formato inválido. Valores permitidos: pdf, texto",
+        )
+    formato = formato.lower()
+
+    # 2. Normalizar y validar municipio
+    if str(municipio).isdigit():
+        codigo_norm = normalize_dane_code(municipio)
+    else:
+        codigo_norm = get_codigo(municipio)
+
+    if not codigo_norm or codigo_norm not in MVP_CODIGOS:
+        raise HTTPException(status_code=404, detail="Municipio no encontrado en el MVP")
+
+    municipio_display = DANE_TO_NAME[codigo_norm]
+    departamento = DANE_TO_DEPT[codigo_norm]
+
+    # 3. Normalizar y validar cultivo
+    cultivo_norm = normalize_cultivo(cultivo)
+    if not cultivo_norm or cultivo_norm not in CULTIVOS_MVP:
+        raise HTTPException(
+            status_code=422,
+            detail="Cultivo inválido. Valores permitidos: Café, Cacao, Maíz",
+        )
+
+    # 4. Construir reporte
+    try:
+        from modules.conversational.reports import build_reporte, render_pdf
+    except ImportError as e:
+        logger.error(f"Error importando módulo de reportes: {e}")
+        raise HTTPException(status_code=503, detail="Reportes no disponibles")
+
+    try:
+        reporte_dict = build_reporte(
+            codigo_dane=codigo_norm,
+            municipio=municipio_display,
+            departamento=departamento,
+            cultivo=cultivo_norm,
+        )
+    except ValueError as e:
+        logger.warning(f"Sin contexto para reporte {municipio}/{cultivo}: {e}")
+        raise HTTPException(
+            status_code=404,
+            detail="No hay contexto suficiente para generar el reporte",
+        )
+    except FileNotFoundError as e:
+        logger.error(f"Parquet no disponible para reporte: {e}")
+        raise HTTPException(status_code=503, detail="Reportes no disponibles")
+    except Exception as e:
+        logger.error(f"Error inesperado al construir reporte: {e}")
+        raise HTTPException(
+            status_code=500, detail="Error interno al generar el reporte"
+        )
+
+    # 5. Retornar según formato
+    if formato == "texto":
+        return JSONResponse(content=reporte_dict)
+
+    # formato == "pdf"
+    try:
+        pdf_bytes = render_pdf(reporte_dict)
+    except ImportError as e:
+        logger.error(f"reportlab no disponible: {e}")
+        raise HTTPException(status_code=503, detail="Reportes no disponibles")
+    except Exception as e:
+        logger.error(f"Error generando PDF: {e}")
+        raise HTTPException(
+            status_code=500, detail="Error interno al generar el reporte"
+        )
+
+    filename = f"reporte_{municipio}_{cultivo_norm}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
