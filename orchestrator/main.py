@@ -8,6 +8,7 @@ import json
 from modules.agricultural.ingestion import load_eva_completa
 from modules.climate.ingestion import load_clima_agregado
 from modules.predictive.feature_builder import _agregar_anual, _pendiente_3a
+from modules.predictive.scenarios import simulate_scenarios, SCENARIO_CATALOG
 
 from shared.dane_codes import MVP_CODIGOS, DANE_TO_NAME, DANE_TO_DEPT, get_codigo
 from shared.normalization import normalize_dane_code, normalize_cultivo, normalize_name
@@ -40,6 +41,32 @@ class PrediccionResponse(BaseModel):
     rendimiento_esperado: float
     prob_riesgo_alto: float
     etiqueta_riesgo: str
+
+class EscenarioRequest(BaseModel):
+    municipio: str
+    cultivo: str
+    año: int
+    escenarios: Optional[List[str]] = None
+
+class EscenarioResultado(BaseModel):
+    escenario: str
+    rendimiento_esperado: float
+    prob_riesgo_alto: float
+    etiqueta_riesgo: str
+    delta_rendimiento_abs: float
+    delta_rendimiento_pct: float
+    delta_prob_riesgo_alto: float
+    features_modificadas: List[str]
+    supuesto: str
+
+class EscenarioResponse(BaseModel):
+    codigo_dane: str
+    municipio: str
+    departamento: str
+    cultivo: str
+    año: int
+    escenarios_solicitados: List[str]
+    resultados: List[EscenarioResultado]
 
 class RendimientoHistoricoData(BaseModel):
     año: int
@@ -374,4 +401,89 @@ def predecir(req: PrediccionRequest):
         rendimiento_esperado=round(rend_esperado, 2),
         prob_riesgo_alto=round(prob_alto, 3),
         etiqueta_riesgo=etiqueta
+    )
+
+@app.post('/escenario', response_model=EscenarioResponse)
+def post_escenario(req: EscenarioRequest):
+    if str(req.municipio).isdigit():
+        codigo_norm = normalize_dane_code(req.municipio)
+    else:
+        codigo_norm = get_codigo(req.municipio)
+        
+    if not codigo_norm or codigo_norm not in MVP_CODIGOS:
+        raise HTTPException(status_code=404, detail='Municipio no encontrado en el MVP')
+
+    cultivo_norm = normalize_cultivo(req.cultivo)
+    if not cultivo_norm or cultivo_norm not in CULTIVOS_MVP:
+        raise HTTPException(status_code=422, detail='Cultivo inválido. Valores permitidos: Café, Cacao, Maíz')
+
+    if not isinstance(req.año, int):
+        raise HTTPException(status_code=422, detail='Año objetivo inválido para simulación')
+
+    escenarios_req = req.escenarios if req.escenarios is not None else SCENARIO_CATALOG
+    
+    esc_limpios = []
+    esc_limpios.append('base')
+        
+    for e in escenarios_req:
+        if e not in SCENARIO_CATALOG:
+            raise HTTPException(status_code=422, detail='Escenario inválido. Valores permitidos: base, seco, lluvioso, fertilizantes')
+        if e != 'base' and e not in esc_limpios:
+            esc_limpios.append(e)
+
+    parquet_path = DATA_DIR / 'feature_matrix.parquet'
+    if not parquet_path.exists():
+        raise HTTPException(status_code=503, detail='feature_matrix.parquet no disponible')
+    
+    try:
+        df = pd.read_parquet(parquet_path)
+    except Exception:
+        raise HTTPException(status_code=503, detail='feature_matrix.parquet no disponible')
+        
+    df['codigo_dane'] = df['codigo_dane'].astype(str).str.zfill(5)
+    df_filtered = df[(df['codigo_dane'] == codigo_norm) & (df['cultivo'] == cultivo_norm)].copy()
+    
+    if df_filtered.empty:
+        raise HTTPException(status_code=404, detail='No hay datos históricos suficientes para la combinación solicitada')
+        
+    df_filtered['año'] = pd.to_numeric(df_filtered['año'], errors='coerce')
+    max_año_historico = int(df_filtered['año'].max())
+    
+    if req.año <= max_año_historico:
+        raise HTTPException(status_code=422, detail='Año objetivo inválido para simulación')
+        
+    baseline_row = df_filtered[df_filtered['año'] == max_año_historico].copy()
+    baseline_row['año'] = req.año
+    
+    try:
+        df_resultados = simulate_scenarios(baseline_row, esc_limpios)
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail='Artefactos de escenarios no disponibles')
+    except KeyError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail='Error interno en la API de escenarios')
+        
+    resultados = []
+    for _, r in df_resultados.iterrows():
+        resultados.append(EscenarioResultado(
+            escenario=r['escenario'],
+            rendimiento_esperado=r['rendimiento_esperado'],
+            prob_riesgo_alto=r['prob_riesgo_alto'],
+            etiqueta_riesgo=r['etiqueta_riesgo'],
+            delta_rendimiento_abs=r['delta_rendimiento_abs'],
+            delta_rendimiento_pct=r['delta_rendimiento_pct'],
+            delta_prob_riesgo_alto=r['delta_prob_riesgo_alto'],
+            features_modificadas=r['features_modificadas'],
+            supuesto=r['supuesto']
+        ))
+        
+    return EscenarioResponse(
+        codigo_dane=codigo_norm,
+        municipio=DANE_TO_NAME[codigo_norm],
+        departamento=DANE_TO_DEPT[codigo_norm],
+        cultivo=cultivo_norm,
+        año=req.año,
+        escenarios_solicitados=esc_limpios,
+        resultados=resultados
     )

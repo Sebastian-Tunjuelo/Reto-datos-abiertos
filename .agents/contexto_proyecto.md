@@ -280,6 +280,7 @@ COLUMNAS_EVA = [
 | M4.3 | `specs/M4_Explicabilidad_SHAP/M4.3_narrativas.md`                          | ✅ Completo | `modules/explainability/narrative_builder.py → build_and_save_narratives_df()`                            |
 | M4.4 | `specs/M4_Explicabilidad_SHAP/M4.4_validacion.md`                          | ✅ Completo | `specs/M4_Explicabilidad_SHAP/validate_m4.py → validate_m4()`                                             |
 | M5.1 | `specs/M5_simulacion_escenarios/M5.1_funcion_escenarios.md`                | ✅ Completo | `modules/predictive/scenarios.py → simulate_scenarios()` + `validate_m5.py`                               |
+| A3.1 | `specs/A3_api_mvp/A3.1_escenario.md`                                       | ✅ Completo | `orchestrator/main.py → POST /escenario`                                                                  |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -399,5 +400,5 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
 | `modules/explainability/`           | ✅ M4 Completo (SHAP validado y extractor de características funcionando)                                                                                                   |
 | `modules/conversational/`           | 🔲 Por implementar                                                                                                                                                          |
-| `orchestrator/`                     | ✅ A1 Completa, A2 Completa                                                                                                                                                 |
+| `orchestrator/`                     | ✅ A1 Completa, A2 Completa, A3.1 Completa                                                                                                                                  |
 | `frontend/`                         | 🔲 Por implementar                                                                                                                                                          |
