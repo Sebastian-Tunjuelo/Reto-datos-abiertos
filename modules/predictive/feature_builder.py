@@ -736,7 +736,7 @@ def _rename_target(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _enforce_schema(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
+    df = df.loc[:, ~df.columns.duplicated()].copy()
     valid_signals = {"bajo", "medio", "alto"}
     if "señal_riesgo_economico" in df.columns:
         invalid = ~df["señal_riesgo_economico"].isin(valid_signals) & df["señal_riesgo_economico"].notna()

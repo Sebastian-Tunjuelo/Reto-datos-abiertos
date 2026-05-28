@@ -242,7 +242,7 @@ COLUMNAS_EVA = [
 ## Specs de desarrollo
 
 | ID   | Archivo                                                                    | Estado      | Función objetivo                                                                                          |
-| ---- | -------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- | --- | ---- | ------------------------------------------------- | ----------- | ----------------------------------------------------------------- |
+| ---- | -------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
 | D1.1 | `specs/D1_pipeline_eva/D1.1_historica.md`                                  | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_historica()`                                            |
 | D1.2 | `specs/D1_pipeline_eva/D1.2_reciente.md`                                   | ✅ Completo | `modules/agricultural/ingestion.py → download_eva_reciente()`                                             |
 | D1.3 | `specs/D1_pipeline_eva/D1.3_unificacion.md`                                | ✅ Completo | `modules/agricultural/ingestion.py → run_pipeline()`                                                      |
@@ -275,6 +275,10 @@ COLUMNAS_EVA = [
 | M3.2 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.2_entrenamiento_clasificador.md` | ✅ Completo | `modules/predictive/train_classifier.py → train_classifiers()`, `_train_single_cultivo_classifier()`      |
 | M3.3 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.3_evaluacion_y_guardado.md`      | ✅ Completo | `modules/predictive/train_classifier.py → evaluate_and_save_metrics()`                                    |
 | M3.4 | `specs/M3_XGBoost_Classifier_de_riesgo/M3.4_validacion.md`                 | ✅ Completo | `specs/M3_XGBoost_Classifier_de_riesgo/validate_m3.py → run_validations()`                                |
+| M4.1 | `specs/M4_Explicabilidad_SHAP/M4.1_calculo_shap.md`                        | ✅ Completo | `modules/explainability/shap_calculator.py → build_and_save_explainers()`                                 |
+| M4.2 | `specs/M4_Explicabilidad_SHAP/M4.2_top_features.md`                        | ✅ Completo | `modules/explainability/feature_extractor.py → get_top_n_features()`                                      |
+| M4.3 | `specs/M4_Explicabilidad_SHAP/M4.3_narrativas.md`                          | ✅ Completo | `modules/explainability/narrative_builder.py → build_and_save_narratives_df()`                            |
+| M4.4 | `specs/M4_Explicabilidad_SHAP/M4.4_validacion.md`                          | ✅ Completo | `specs/M4_Explicabilidad_SHAP/validate_m4.py → validate_m4()`                                             |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 

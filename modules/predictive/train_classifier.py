@@ -220,9 +220,15 @@ def evaluate_and_save_metrics(
             }
             metrics_records.append(record)
             
+        import unicodedata
+        import re
+        slug = str(cultivo).lower()
+        slug = unicodedata.normalize('NFD', slug).encode('ascii', 'ignore').decode('utf-8')
+        slug = re.sub(r'[^a-z0-9]', '', slug)
+        
         # Serialización de artefactos
-        model_filename = output_dir / f"xgb_classifier_{cultivo.lower()}.pkl"
-        meta_filename = output_dir / f"xgb_classifier_{cultivo.lower()}_meta.json"
+        model_filename = output_dir / f"xgb_classifier_{slug}.pkl"
+        meta_filename = output_dir / f"xgb_classifier_{slug}_meta.json"
         
         try:
             joblib.dump(model, model_filename)

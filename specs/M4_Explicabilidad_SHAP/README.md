@@ -10,12 +10,12 @@ La adopción de herramientas de IA en el sector agrícola fracasa si los usuario
 
 ## Subtareas
 
-| ID   | Archivo                                      | Qué hace                                    | Depende de | Estado       |
-| ---- | -------------------------------------------- | ------------------------------------------- | ---------- | ------------ |
-| M4.1 | [M4.1_calculo_shap.md](M4.1_calculo_shap.md) | Calcula valores SHAP y genera explainers    | M2, M3     | ⏳ Pendiente |
-| M4.2 | [M4.2_top_features.md](M4.2_top_features.md) | Mapea columnas a descripciones y saca top N | M4.1       | ⏳ Pendiente |
-| M4.3 | [M4.3_narrativas.md](M4.3_narrativas.md)     | Aplica plantillas para generar narrativa    | M4.2       | ⏳ Pendiente |
-| M4.4 | [M4.4_validacion.md](M4.4_validacion.md)     | Script de validación independiente          | M4.3       | ⏳ Pendiente |
+| ID   | Archivo                                      | Qué hace                                    | Depende de | Estado        |
+| ---- | -------------------------------------------- | ------------------------------------------- | ---------- | ------------- |
+| M4.1 | [M4.1_calculo_shap.md](M4.1_calculo_shap.md) | Calcula valores SHAP y genera explainers    | M2, M3     | 🟢 Completado |
+| M4.2 | [M4.2_top_features.md](M4.2_top_features.md) | Mapea columnas a descripciones y saca top N | M4.1       | 🟢 Completado |
+| M4.3 | [M4.3_narrativas.md](M4.3_narrativas.md)     | Aplica plantillas para generar narrativa    | M4.2       | 🟢 Completado |
+| M4.4 | [M4.4_validacion.md](M4.4_validacion.md)     | Script de validación independiente          | M4.3       | 🟢 Completado |
 
 ## Outputs finales
 

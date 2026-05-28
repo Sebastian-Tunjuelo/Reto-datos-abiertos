@@ -10,9 +10,9 @@ La pregunta de negocio no es solo cuál es el rendimiento esperado, sino cómo c
 
 ## Subtareas
 
-| ID   | Archivo                                                  | Qué hace                                                                                    | Depende de | Estado       |
-| ---- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------- | ------------ |
-| M5.1 | [M5.1_funcion_escenarios.md](M5.1_funcion_escenarios.md) | Define el catálogo de escenarios, aplica shocks y genera la comparación base vs. escenarios | M1, M2, M3 | ⏳ Pendiente |
+| ID   | Archivo                                                  | Qué hace                                                                                    | Depende de | Estado        |
+| ---- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------- | ------------- |
+| M5.1 | [M5.1_funcion_escenarios.md](M5.1_funcion_escenarios.md) | Define el catálogo de escenarios, aplica shocks y genera la comparación base vs. escenarios | M1, M2, M3 | ✅ Completado |
 
 > M5.1 concentra la lógica funcional y define la validación (incluye `validate_m5.py`).
 
