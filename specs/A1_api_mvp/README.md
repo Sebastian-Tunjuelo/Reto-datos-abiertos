@@ -16,12 +16,12 @@ Este bloque no incluye SHAP, escenarios, chat, persistencia ni entrenamiento.
 
 ## Subtareas
 
-| ID   | Archivo                                                          | Qué hace                    | Depende de                            | Estado      |
-| ---- | ---------------------------------------------------------------- | --------------------------- | ------------------------------------- | ----------- |
-| A1.1 | [A1.1_catalogo_municipios.md](A1.1_catalogo_municipios.md)       | `GET /municipios`           | `shared/dane_codes.py`                | 📝 Borrador |
-| A1.2 | [A1.2_cultivos_por_municipio.md](A1.2_cultivos_por_municipio.md) | `GET /cultivos/{municipio}` | A1.1 + `data/feature_matrix.parquet`  | 📝 Borrador |
-| A1.3 | [A1.3_predecir.md](A1.3_predecir.md)                             | `POST /predecir`            | A1.1 + A1.2 + M2 + M3                 | 📝 Borrador |
-| A1.4 | [A1.4_validacion.md](A1.4_validacion.md)                         | Validación del contrato     | A1.1 + A1.2 + A1.3 + artefactos M2/M3 | 📝 Borrador |
+| ID   | Archivo                                                          | Qué hace                    | Depende de                            | Estado        |
+| ---- | ---------------------------------------------------------------- | --------------------------- | ------------------------------------- | ------------- |
+| A1.1 | [A1.1_catalogo_municipios.md](A1.1_catalogo_municipios.md)       | `GET /municipios`           | `shared/dane_codes.py`                | ✅ Completado |
+| A1.2 | [A1.2_cultivos_por_municipio.md](A1.2_cultivos_por_municipio.md) | `GET /cultivos/{municipio}` | A1.1 + `data/feature_matrix.parquet`  | ✅ Completado |
+| A1.3 | [A1.3_predecir.md](A1.3_predecir.md)                             | `POST /predecir`            | A1.1 + A1.2 + M2 + M3                 | ✅ Completado |
+| A1.4 | [A1.4_validacion.md](A1.4_validacion.md)                         | Validación del contrato     | A1.1 + A1.2 + A1.3 + artefactos M2/M3 | ✅ Completado |
 
 > A1.1 y A1.2 pueden implementarse en paralelo. A1.3 depende del contrato estable de ambas. A1.4 valida el API completo una vez exista la capa funcional.
 
