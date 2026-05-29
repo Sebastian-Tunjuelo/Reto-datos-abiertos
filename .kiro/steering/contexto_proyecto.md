@@ -285,6 +285,9 @@ COLUMNAS_EVA = [
 | A3.2 | `specs/A3_api_mvp/A3.2_chat.md`                                             | ✅ Completo | `orchestrator/main.py → POST /chat`                                                                       |
 | A3.3 | `specs/A3_api_mvp/A3.3_reporte.md`                                          | ✅ Completo | `orchestrator/main.py → GET /reporte/{municipio}/{cultivo}`                                               |
 | A3.4 | `specs/A3_api_mvp/A3.4_validacion.md`                                       | ✅ Completo | `specs/A3_api_mvp/validate_a3.py → run_validations()`                                                    |
+| C1.1 | `specs/C1_rag_motor/C1.1_indexacion_corpus.md`                              | ✅ Completo | `modules/conversational/rag.py → build_rag_index()`, `get_rag_index()`, `RagDocument`, `RagIndex`        |
+| C1.2 | `specs/C1_rag_motor/C1.2_funcion_recuperacion.md`                           | ✅ Completo | `modules/conversational/rag.py → recuperar_contexto()`, `_score_document()`                              |
+| C1.3 | `specs/C1_rag_motor/C1.3_validacion.md`                                     | ✅ Completo | `specs/C1_rag_motor/validate_c1.py → run_validations()` — 19/19 PASS                                    |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -403,7 +406,7 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/economic/`                 | ✅ D4.1–D4.3 completos (ingestion + validacion)                                                                                                                             |
 | `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
 | `modules/explainability/`           | ✅ M4 Completo — SHAP validado, `predicciones_con_explicacion.parquet` generado (395 registros). Pipeline ejecutable vía `scripts/run_m4_pipeline.py`. |
-| `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`                                               |
+| `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`. C1.1–C1.3 Completos — `RagDocument`, `RagIndex`, `build_rag_index()`, `get_rag_index()`, `_score_document()`, `recuperar_contexto()` refactorizado para usar el índice. `validate_c1.py` 19/19 PASS. |
 | `orchestrator/`                     | ✅ A1–A3 Completas. Bug fix en `POST /predecir`: features leídas del booster + `señal_riesgo_economico` mapeada a encoded.                                                  |
 | `frontend/`                         | ✅ F1, F2, F3 completos. Mapa interactivo → Ficha municipal → Comparador de cultivos. CORS configurado. `react-plotly.js` instalado. GeoJSON generado para 15 municipios MVP. |
 

@@ -281,6 +281,13 @@ COLUMNAS_EVA = [
 | M4.4 | `specs/M4_Explicabilidad_SHAP/M4.4_validacion.md`                          | ✅ Completo | `specs/M4_Explicabilidad_SHAP/validate_m4.py → validate_m4()`                                             |
 | M5.1 | `specs/M5_simulacion_escenarios/M5.1_funcion_escenarios.md`                | ✅ Completo | `modules/predictive/scenarios.py → simulate_scenarios()` + `validate_m5.py`                               |
 | A3.1 | `specs/A3_api_mvp/A3.1_escenario.md`                                       | ✅ Completo | `orchestrator/main.py → POST /escenario`                                                                  |
+| C1.1 | `specs/C1_rag_motor/C1.1_indexacion_corpus.md`                              | ✅ Completo | `modules/conversational/rag.py → build_rag_index()`, `get_rag_index()`, `RagDocument`, `RagIndex`        |
+| C1.2 | `specs/C1_rag_motor/C1.2_funcion_recuperacion.md`                           | ✅ Completo | `modules/conversational/rag.py → recuperar_contexto()`, `_score_document()`                              |
+| C1.3 | `specs/C1_rag_motor/C1.3_validacion.md`                                     | ✅ Completo | `specs/C1_rag_motor/validate_c1.py → run_validations()` — 19/19 PASS                                    |
+| C2.1 | `specs/C2_prompts/C2.1_prompt_conversacional.md`                            | ✅ Completo | `modules/conversational/prompts.py → build_prompt_conversacional()`                                      |
+| C2.2 | `specs/C2_prompts/C2.2_prompt_reporte_umata.md`                             | ✅ Completo | `modules/conversational/prompts.py → build_prompt_reporte_umata()`, `_build_encabezado_umata()`          |
+| C2.3 | `specs/C2_prompts/C2.3_prompt_comparacion_cultivos.md`                      | ✅ Completo | `modules/conversational/prompts.py → build_prompt_comparacion_cultivos()`, `_build_tabla_comparativa()`  |
+| C2.4 | `specs/C2_prompts/C2.4_validacion_prompts.md`                               | ✅ Completo | `specs/C2_prompts/validate_c2.py → run_validations()` — 28/28 PASS                                      |
 
 > Actualizar el campo `Estado` cuando una spec se complete.
 
@@ -399,7 +406,7 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/economic/`                 | ✅ D4.1–D4.3 completos (ingestion + validacion)                                                                                                                             |
 | `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
 | `modules/explainability/`           | ✅ M4 Completo — SHAP validado, `predicciones_con_explicacion.parquet` generado (395 registros). Pipeline ejecutable vía `scripts/run_m4_pipeline.py`. |
-| `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`                                               |
+| `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`. C1.1–C1.3 Completos — `RagDocument`, `RagIndex`, `build_rag_index()`, `get_rag_index()`, `_score_document()`, `recuperar_contexto()` refactorizado para usar el índice. `validate_c1.py` 19/19 PASS. C2.1–C2.4 Completos — `build_prompt_conversacional()`, `build_prompt_reporte_umata()`, `build_prompt_comparacion_cultivos()` + auxiliares. `validate_c2.py` 28/28 PASS. |
 | `orchestrator/`                     | ✅ A1–A3 Completas. Bug fix en `POST /predecir`: features leídas del booster + `señal_riesgo_economico` mapeada a encoded.                                                  |
 | `frontend/`                         | ✅ F1, F2, F3 completos. Mapa interactivo → Ficha municipal → Comparador de cultivos. CORS configurado. `react-plotly.js` instalado. GeoJSON generado para 15 municipios MVP. |
 

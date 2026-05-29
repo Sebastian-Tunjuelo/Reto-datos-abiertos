@@ -2,16 +2,229 @@
 Módulo de recuperación de contexto (RAG) para el asistente conversacional.
 Recupera información de predicciones, narrativas SHAP y glosario agrícola.
 """
+import json
 import logging
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 import pandas as pd
 
 from shared.config import DATA_DIR, MODELS_DIR
-from shared.dane_codes import DANE_TO_NAME, get_codigo
+from shared.dane_codes import DANE_TO_NAME, get_codigo, MVP_CODIGOS
 from shared.normalization import normalize_dane_code, normalize_cultivo
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# C1.1 — Índice RAG en memoria
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RagDocument:
+    """Representa un documento del corpus RAG (una fila del Parquet)."""
+    codigo_dane: str
+    municipio: str
+    departamento: str
+    cultivo: str
+    año: int
+    prediccion_riesgo: Optional[str]
+    narrativa_riesgo: Optional[str]
+    top_features: list          # lista de dicts [{feature, valor, importancia}]
+    rendimiento_t1: Optional[float]
+    rendimiento_prom3a: Optional[float]
+    tendencia_rend_3a: Optional[float]
+    prec_acum_mm: Optional[float]
+    anomalia_prec: Optional[float]
+    temp_media_c: Optional[float]
+    anomalia_temp: Optional[float]
+    dias_secos: Optional[float]
+    hum_media_pct: Optional[float]
+    pct_alta: Optional[float]
+    pct_media: Optional[float]
+    pct_baja: Optional[float]
+    pct_exclusion: Optional[float]
+    pct_condicionada: Optional[float]
+    pct_no_condicionada: Optional[float]
+    indice_agroinsumos: Optional[float]
+    percentil_fertilizantes: Optional[float]
+    señal_riesgo_economico: Optional[str]
+    target_rendimiento: Optional[float]
+    area_sembrada_t1: Optional[float]
+
+
+class RagIndex:
+    """Índice en memoria del corpus RAG, agrupado por (codigo_dane, cultivo)."""
+
+    def __init__(self, documents: dict):
+        # documents: {(codigo_dane, cultivo): [RagDocument, ...]}
+        self._index: dict[tuple[str, str], list[RagDocument]] = documents
+
+    @property
+    def total_documents(self) -> int:
+        return sum(len(v) for v in self._index.values())
+
+    @property
+    def keys(self) -> list:
+        return list(self._index.keys())
+
+    def get(self, codigo_dane: str, cultivo: str) -> list:
+        return self._index.get((codigo_dane, cultivo), [])
+
+
+# Instancia global lazy
+_rag_index: Optional[RagIndex] = None
+
+
+def _safe_float(value) -> Optional[float]:
+    """Convierte un valor a float, retorna None si no es posible."""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        return None if pd.isna(f) else f
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_str(value) -> Optional[str]:
+    """Convierte un valor a str, retorna None si es NaN/None."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
+def build_rag_index(path: Optional[Path] = None) -> RagIndex:
+    """
+    Carga el corpus y construye el índice RAG en memoria.
+
+    Args:
+        path: Ruta al Parquet. Si es None, usa DATA_DIR / "predicciones_con_explicacion.parquet".
+
+    Returns:
+        RagIndex con todos los documentos indexados por (codigo_dane, cultivo).
+
+    Raises:
+        FileNotFoundError: Si el archivo no existe.
+        ValueError: Si el corpus está vacío o no tiene columnas requeridas.
+    """
+    if path is None:
+        path = DATA_DIR / "predicciones_con_explicacion.parquet"
+
+    if not path.exists():
+        raise FileNotFoundError(
+            f"[C1.1] No se encontró predicciones_con_explicacion.parquet: {path}"
+        )
+
+    try:
+        df = pd.read_parquet(path)
+    except Exception as e:
+        logger.error(f"[C1.1] Error construyendo índice RAG: {e}")
+        raise
+
+    if df.empty:
+        raise ValueError(
+            "[C1.1] Corpus vacío: predicciones_con_explicacion.parquet no tiene registros"
+        )
+
+    # Validar columnas mínimas requeridas
+    cols_requeridas = {"codigo_dane", "cultivo", "año"}
+    cols_faltantes = cols_requeridas - set(df.columns)
+    if cols_faltantes:
+        raise ValueError(f"[C1.1] Columnas faltantes en el corpus: {cols_faltantes}")
+
+    index: dict[tuple[str, str], list[RagDocument]] = {}
+    filas_descartadas = 0
+
+    for _, row in df.iterrows():
+        # --- Normalizar codigo_dane ---
+        raw_code = str(row.get("codigo_dane", ""))
+        codigo_norm = normalize_dane_code(raw_code)
+        if not codigo_norm or len(codigo_norm) != 5:
+            logger.warning(f"[C1.1] codigo_dane no normalizable: {raw_code!r}")
+            filas_descartadas += 1
+            continue
+
+        # --- Normalizar cultivo ---
+        raw_cultivo = row.get("cultivo", "")
+        cultivo_norm = normalize_cultivo(str(raw_cultivo) if raw_cultivo is not None else "")
+        if cultivo_norm is None:
+            logger.warning(f"[C1.1] Cultivo no reconocido descartado: {raw_cultivo!r}")
+            filas_descartadas += 1
+            continue
+
+        # --- Parsear top_features ---
+        raw_tf = row.get("top_features")
+        top_features: list = []
+        if raw_tf is not None:
+            try:
+                if isinstance(raw_tf, str):
+                    top_features = json.loads(raw_tf)
+                elif isinstance(raw_tf, list):
+                    top_features = raw_tf
+            except (json.JSONDecodeError, TypeError):
+                año_val = row.get("año", "?")
+                logger.warning(
+                    f"[C1.1] top_features no parseable para {codigo_norm}/{cultivo_norm}/{año_val}"
+                )
+                top_features = []
+
+        # --- Construir RagDocument ---
+        doc = RagDocument(
+            codigo_dane=codigo_norm,
+            municipio=_safe_str(row.get("municipio")) or "",
+            departamento=_safe_str(row.get("departamento")) or "",
+            cultivo=cultivo_norm,
+            año=int(row["año"]) if pd.notna(row.get("año")) else 0,
+            prediccion_riesgo=_safe_str(row.get("prediccion_riesgo")),
+            narrativa_riesgo=_safe_str(row.get("narrativa_riesgo")),
+            top_features=top_features,
+            rendimiento_t1=_safe_float(row.get("rendimiento_t1")),
+            rendimiento_prom3a=_safe_float(row.get("rendimiento_prom3a")),
+            tendencia_rend_3a=_safe_float(row.get("tendencia_rend_3a")),
+            prec_acum_mm=_safe_float(row.get("prec_acum_mm")),
+            anomalia_prec=_safe_float(row.get("anomalia_prec")),
+            temp_media_c=_safe_float(row.get("temp_media_c")),
+            anomalia_temp=_safe_float(row.get("anomalia_temp")),
+            dias_secos=_safe_float(row.get("dias_secos")),
+            hum_media_pct=_safe_float(row.get("hum_media_pct")),
+            pct_alta=_safe_float(row.get("pct_alta")),
+            pct_media=_safe_float(row.get("pct_media")),
+            pct_baja=_safe_float(row.get("pct_baja")),
+            pct_exclusion=_safe_float(row.get("pct_exclusion")),
+            pct_condicionada=_safe_float(row.get("pct_condicionada")),
+            pct_no_condicionada=_safe_float(row.get("pct_no_condicionada")),
+            indice_agroinsumos=_safe_float(row.get("indice_agroinsumos")),
+            percentil_fertilizantes=_safe_float(row.get("percentil_fertilizantes")),
+            señal_riesgo_economico=_safe_str(row.get("señal_riesgo_economico")),
+            target_rendimiento=_safe_float(row.get("target_rendimiento")),
+            area_sembrada_t1=_safe_float(row.get("area_sembrada_t1")),
+        )
+
+        key = (codigo_norm, cultivo_norm)
+        if key not in index:
+            index[key] = []
+        index[key].append(doc)
+
+    rag_index = RagIndex(index)
+    logger.info(
+        f"[C1.1] Índice RAG construido: {rag_index.total_documents} documentos, "
+        f"{len(rag_index.keys)} claves (codigo_dane, cultivo), "
+        f"{filas_descartadas} filas descartadas"
+    )
+    return rag_index
+
+
+def get_rag_index() -> RagIndex:
+    """Retorna la instancia global del índice RAG (lazy singleton)."""
+    global _rag_index
+    if _rag_index is None:
+        _rag_index = build_rag_index()
+    return _rag_index
 
 # Mapeo de features técnicas a nombres amigables
 FEATURE_MAPPING = {
@@ -145,6 +358,37 @@ def load_glosario() -> str:
         return ""
 
 
+# ---------------------------------------------------------------------------
+# C1.2 — Función de recuperación por municipio/cultivo
+# ---------------------------------------------------------------------------
+
+def _score_document(doc: RagDocument, año: Optional[int]) -> float:
+    """
+    Calcula la relevancia de un documento dado el año de referencia.
+
+    Reglas de scoring:
+    - año is None  → score = doc.año  (priorizar el más reciente)
+    - año == doc.año → score = 1000   (coincidencia exacta)
+    - año > doc.año  → score = 1000 - (año - doc.año)  (penalizar por distancia pasada)
+    - año < doc.año  → score = 500  - (doc.año - año)  (penalizar más por ser futuro)
+
+    Args:
+        doc: Documento del índice RAG.
+        año: Año de referencia de la consulta. None = priorizar más reciente.
+
+    Returns:
+        float: Score de relevancia. Mayor es más relevante.
+    """
+    if año is None:
+        return float(doc.año)
+    if año == doc.año:
+        return 1000.0
+    if año > doc.año:
+        return 1000.0 - (año - doc.año)
+    # año < doc.año  (documento más reciente que lo solicitado)
+    return 500.0 - (doc.año - año)
+
+
 def recuperar_contexto(
     municipio: Optional[str] = None,
     cultivo: Optional[str] = None,
@@ -153,140 +397,121 @@ def recuperar_contexto(
     tono: str = "campesino"
 ) -> ContextoRecuperado:
     """
-    Recupera contexto de múltiples fuentes para alimentar el LLM.
-    
+    Recupera contexto del índice RAG para alimentar el LLM.
+
+    Usa get_rag_index() en lugar de leer el Parquet en cada llamada.
+    La firma pública es idéntica a la versión anterior para no romper chat_engine.py.
+
     Args:
-        municipio: Nombre o código DANE del municipio
-        cultivo: Nombre del cultivo (Café, Cacao, Maíz)
-        año: Año de referencia
-        escenario: Escenario de simulación (base, seco, lluvioso, fertilizantes)
-        tono: Tono de la respuesta (campesino o institucional)
-        
+        municipio: Nombre display o código DANE del municipio.
+        cultivo: Nombre del cultivo (Café, Cacao, Maíz).
+        año: Año de referencia para el scoring de documentos.
+        escenario: Escenario de simulación (informativo, no afecta recuperación).
+        tono: Tono de la respuesta (informativo, no afecta recuperación).
+
     Returns:
-        ContextoRecuperado: Objeto con toda la información recuperada
+        ContextoRecuperado con predicción, narrativa, top_features y fuentes.
+        Retorna ContextoRecuperado vacío si no hay contexto suficiente o no hay coincidencia.
     """
     resultado = ContextoRecuperado()
-    
-    # Normalizar municipio
-    codigo_norm = None
-    municipio_display = None
-    
+
+    # --- 1. Normalizar municipio ---
+    codigo_norm: Optional[str] = None
+    municipio_display: Optional[str] = None
+
     if municipio:
-        if str(municipio).isdigit():
-            codigo_norm = normalize_dane_code(municipio)
+        raw = str(municipio).strip()
+        if raw.isdigit():
+            codigo_norm = normalize_dane_code(raw)
         else:
-            codigo_norm = get_codigo(municipio)
-        
+            codigo_norm = get_codigo(raw)
+
         if codigo_norm and codigo_norm in DANE_TO_NAME:
             municipio_display = DANE_TO_NAME[codigo_norm]
         else:
-            logger.warning(f"Municipio no reconocido: {municipio}")
+            logger.warning(f"[C1.2] Municipio no reconocido: {municipio!r}")
             return resultado
-    
-    # Normalizar cultivo
-    cultivo_norm = None
+
+    # --- 2. Normalizar cultivo ---
+    cultivo_norm: Optional[str] = None
     if cultivo:
         cultivo_norm = normalize_cultivo(cultivo)
-    
-    # Registrar contexto efectivo
+        if cultivo_norm is None:
+            logger.warning(f"[C1.2] Cultivo no reconocido: {cultivo!r}")
+            return resultado
+
+    # Registrar contexto efectivo (siempre, incluso si vacío)
     resultado.contexto_efectivo = {
         "municipio": municipio_display,
         "cultivo": cultivo_norm,
         "año": año,
-        "escenario": escenario
+        "escenario": escenario,
     }
-    
-    # Si no hay contexto suficiente, retornar vacío
-    if not municipio and not cultivo:
-        logger.info("Sin contexto específico, no se recuperan predicciones")
-        return resultado
-    
-    # Intentar cargar predicciones con explicación
-    df_pred = load_predicciones_con_explicacion()
-    
-    if df_pred is not None and codigo_norm and cultivo_norm:
-        # Filtrar por municipio y cultivo
-        df_pred["codigo_dane"] = df_pred["codigo_dane"].astype(str).str.zfill(5)
-        
-        filtro = (df_pred["codigo_dane"] == codigo_norm)
-        if "cultivo" in df_pred.columns:
-            filtro = filtro & (df_pred["cultivo"] == cultivo_norm)
-        
-        df_filtrado = df_pred[filtro]
-        
-        if not df_filtrado.empty:
-            # Tomar el registro más reciente
-            if "año" in df_filtrado.columns:
-                df_filtrado = df_filtrado.sort_values("año", ascending=False)
-            
-            row = df_filtrado.iloc[0]
-            
-            # Extraer predicción — columnas reales del parquet
-            def _safe_get(r, *keys):
-                for k in keys:
-                    v = r.get(k)
-                    if v is not None and not (isinstance(v, float) and pd.isna(v)):
-                        return v
-                return None
 
+    # Sin municipio ni cultivo no hay nada que recuperar
+    if not municipio and not cultivo:
+        logger.info("[C1.2] Sin contexto específico, no se recuperan predicciones")
+        return resultado
+
+    # --- 3. Recuperar del índice RAG ---
+    if codigo_norm and cultivo_norm:
+        try:
+            index = get_rag_index()
+        except Exception as e:
+            logger.error(f"[C1.2] Índice RAG no disponible: {e}")
+            return resultado
+
+        candidatos = index.get(codigo_norm, cultivo_norm)
+
+        if not candidatos:
+            logger.warning(f"[C1.2] Sin documentos para {municipio_display}/{cultivo_norm}")
+        else:
+            # --- 4. Seleccionar el documento con mayor score ---
+            doc = max(candidatos, key=lambda d: _score_document(d, año))
+
+            # --- 5. Construir ContextoRecuperado desde el documento ---
             resultado.prediccion = {
-                "rendimiento_esperado": _safe_get(row, "rendimiento_esperado", "rendimiento_predicho", "rendimiento_t1"),
-                "prob_riesgo_alto": _safe_get(row, "prob_riesgo_alto", "prob_riesgo"),
-                "etiqueta_riesgo": _safe_get(row, "etiqueta_riesgo", "prediccion_riesgo", "riesgo")
+                "rendimiento_esperado": doc.rendimiento_t1,
+                "etiqueta_riesgo": doc.prediccion_riesgo,
             }
             resultado.fuentes.append("predicciones_con_explicacion.parquet")
 
-            # Extraer narrativa
-            narrativa_val = row.get("narrativa_riesgo")
-            if narrativa_val is not None:
-                try:
-                    if pd.notna(narrativa_val):
-                        resultado.narrativa = str(narrativa_val)
-                        resultado.fuentes.append("narrativa_riesgo")
-                except (TypeError, ValueError):
-                    pass
+            if doc.narrativa_riesgo is not None:
+                resultado.narrativa = doc.narrativa_riesgo
+                resultado.fuentes.append("narrativa_riesgo")
 
-            # Extraer top features si existen
-            top_val = row.get("top_features")
-            if top_val is not None:
-                try:
-                    import json
-                    if isinstance(top_val, str):
-                        resultado.top_features = json.loads(top_val)
-                    elif isinstance(top_val, list):
-                        resultado.top_features = top_val
-                    if resultado.top_features:
-                        resultado.fuentes.append("top_features_shap")
-                except Exception as e:
-                    logger.warning(f"Error parseando top_features: {e}")
-    
-    # Intentar cargar serie histórica de feature_matrix
+            if doc.top_features:
+                resultado.top_features = doc.top_features
+                resultado.fuentes.append("top_features_shap")
+
+    # --- 6. Serie histórica desde feature_matrix (lógica existente, sin cambios) ---
     df_features = load_feature_matrix()
-    
+
     if df_features is not None and codigo_norm and cultivo_norm:
         df_features["codigo_dane"] = df_features["codigo_dane"].astype(str).str.zfill(5)
-        
-        filtro = (df_features["codigo_dane"] == codigo_norm)
+
+        filtro = df_features["codigo_dane"] == codigo_norm
         if "cultivo" in df_features.columns:
             filtro = filtro & (df_features["cultivo"] == cultivo_norm)
-        
+
         df_hist = df_features[filtro].copy()
-        
+
         if not df_hist.empty and "año" in df_hist.columns:
             df_hist = df_hist.sort_values("año", ascending=True)
-            
-            # Extraer últimos 5 años de rendimiento
+
             resultado.serie_historica = []
             for _, r in df_hist.tail(5).iterrows():
-                rend_val = r.get("rendimiento") if pd.notna(r.get("rendimiento")) else r.get("rendimiento_t1")
+                rend_val = r.get("rendimiento")
+                if rend_val is None or (isinstance(rend_val, float) and pd.isna(rend_val)):
+                    rend_val = r.get("rendimiento_t1")
                 resultado.serie_historica.append({
                     "año": int(r["año"]) if pd.notna(r.get("año")) else None,
-                    "rendimiento": float(rend_val) if rend_val is not None and pd.notna(rend_val) else None
+                    "rendimiento": float(rend_val) if rend_val is not None and pd.notna(rend_val) else None,
                 })
-            
+
             if resultado.serie_historica:
                 resultado.fuentes.append("feature_matrix.parquet")
-    
+
     return resultado
 
 
