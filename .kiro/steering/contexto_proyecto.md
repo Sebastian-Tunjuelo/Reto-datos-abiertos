@@ -405,7 +405,7 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/explainability/`           | ✅ M4 Completo — SHAP validado, `predicciones_con_explicacion.parquet` generado (395 registros). Pipeline ejecutable vía `scripts/run_m4_pipeline.py`. |
 | `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`                                               |
 | `orchestrator/`                     | ✅ A1–A3 Completas. Bug fix en `POST /predecir`: features leídas del booster + `señal_riesgo_economico` mapeada a encoded.                                                  |
-| `frontend/`                         | 🔲 Por implementar                                                                                                                                                          |
+| `frontend/`                         | ✅ F1, F2, F3 completos. Mapa interactivo → Ficha municipal → Comparador de cultivos. CORS configurado. `react-plotly.js` instalado. GeoJSON generado para 15 municipios MVP. |
 
 ---
 

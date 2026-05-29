@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 from typing import List, Optional
 import pandas as pd
@@ -19,6 +20,14 @@ from shared.config import CULTIVOS_MVP, UMBRAL_RIESGO_MEDIO, UMBRAL_RIESGO_ALTO,
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SiembraSegura IA API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class MunicipioItem(BaseModel):
     codigo_dane: str
