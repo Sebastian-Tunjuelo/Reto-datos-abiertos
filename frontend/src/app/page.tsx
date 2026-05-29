@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Sprout, BarChart3 } from "lucide-react";
+import { Sprout, BarChart3, MessageSquare } from "lucide-react";
 
 const MapaColombia = dynamic(() => import("../components/MapaColombia"), {
   ssr: false,
@@ -31,6 +31,13 @@ export default function Home() {
           >
             <BarChart3 className="size-4" />
             Comparador
+          </Link>
+          <Link
+            href="/asistente"
+            className="flex items-center gap-1.5 text-sm text-primary hover:underline underline-offset-2"
+          >
+            <MessageSquare className="size-4" />
+            Asistente
           </Link>
         </div>
       </header>

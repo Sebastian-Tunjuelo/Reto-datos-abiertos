@@ -7,10 +7,14 @@ import json
 import logging
 from io import BytesIO
 from typing import Optional
+import datetime
 
 import pandas as pd
 
 from shared.config import DATA_DIR
+from modules.conversational.rag import recuperar_contexto
+from modules.conversational.prompts import build_prompt_reporte_umata
+from modules.conversational.chat_engine import get_chat_engine
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +326,16 @@ def build_reporte(
         f"Reporte municipal de riesgo y recomendación - {municipio} / {cultivo}"
     )
 
+    # Generar display amigable para top_features
+    top_features_display = []
+    if top_features:
+        for feat in top_features[:3]:
+            if isinstance(feat, dict):
+                feat_id = feat.get("feature_id", feat.get("feature", ""))
+                top_features_display.append(_feature_nombre_amigable(feat_id))
+            elif isinstance(feat, str):
+                top_features_display.append(_feature_nombre_amigable(feat))
+
     return {
         "codigo_dane": codigo_dane,
         "municipio": municipio,
@@ -332,7 +346,125 @@ def build_reporte(
         "contenido_texto": contenido_texto,
         "secciones": SECCIONES_ORDEN,
         "fuentes": fuentes,
+        "prediccion_riesgo": prediccion_riesgo,
+        "serie_historica": serie_historica,
+        "top_features_display": top_features_display,
     }
+
+
+def build_reporte_umata_llm(
+    codigo_dane: str,
+    municipio: str,
+    departamento: str,
+    cultivo: str,
+    tono: str = "institucional",
+) -> dict:
+    """
+    Construye el reporte usando el LLM (Gemini) para generar el contenido narrativo.
+
+    Retorna el mismo esquema que build_reporte() más la clave 'generado_por_llm'.
+    Si el LLM no está disponible, hace fallback a build_reporte().
+    """
+    try:
+        # 1. Recuperar contexto
+        logger.info(f"[C3.1] Contexto recuperado para {municipio} / {cultivo}")
+        contexto = recuperar_contexto(municipio=municipio, cultivo=cultivo, tono=tono)
+        
+        if not contexto.prediccion:
+            raise ValueError(f"No hay predicción disponible para {municipio} / {cultivo}")
+            
+        # 2. Cargar clima para el prompt (simulado como en build_reporte)
+        clima_row: Optional[dict] = None
+        try:
+            df_clima = _load_clima_agregado()
+            df_clima["codigo_dane"] = df_clima["codigo_dane"].astype(str).str.zfill(5)
+            df_clima["año"] = pd.to_numeric(df_clima["año"], errors="coerce")
+            df_clima = df_clima.dropna(subset=["año"])
+            mask_clima = df_clima["codigo_dane"] == codigo_dane
+            df_mun_clima = df_clima[mask_clima]
+            if not df_mun_clima.empty:
+                df_mun_clima = df_mun_clima.sort_values("año", ascending=False)
+                r_clima = df_mun_clima.iloc[0]
+                clima_row = {
+                    "año": int(r_clima["año"]),
+                    "prec_acum_mm": float(r_clima["prec_acum_mm"]) if pd.notna(r_clima.get("prec_acum_mm")) else None,
+                    "temp_media_c": float(r_clima["temp_media_c"]) if pd.notna(r_clima.get("temp_media_c")) else None,
+                    "hum_media_pct": float(r_clima["hum_media_pct"]) if pd.notna(r_clima.get("hum_media_pct")) else None,
+                }
+        except FileNotFoundError:
+            pass
+
+        año_ref = contexto.contexto_efectivo.get("año")
+        if año_ref is None and contexto.serie_historica:
+            registros = [s for s in contexto.serie_historica if s.get("año")]
+            if registros:
+                año_ref = max(s["año"] for s in registros)
+        if año_ref is None:
+            año_ref = 2024
+
+        prediccion_riesgo = contexto.prediccion.get("etiqueta_riesgo", "Medio")
+
+        # 3. Construir prompt
+        prompt_dict = build_prompt_reporte_umata(
+            contexto_recuperado=contexto,
+            municipio=municipio,
+            cultivo=cultivo,
+            año=año_ref
+        )
+        full_prompt = f"{prompt_dict['system']}\n\n{prompt_dict['user']}"
+
+        # 4. Llamar al LLM
+        logger.info("[C3.1] Llamando LLM para reporte UMATA")
+        engine = get_chat_engine()
+        import google.generativeai as genai
+        response = engine.model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=800,
+                temperature=0.4,
+            )
+        )
+        contenido_texto = response.text.strip()
+        if not contenido_texto:
+            raise RuntimeError("Respuesta del LLM vacía")
+
+        fuentes = contexto.fuentes.copy() if contexto.fuentes else []
+        if "llm:gemini" not in fuentes:
+            fuentes.append("llm:gemini")
+
+        # Generar display amigable para top_features
+        top_features_display = []
+        if contexto.top_features:
+            for feat in contexto.top_features[:3]:
+                if isinstance(feat, dict):
+                    feat_id = feat.get("feature_id", feat.get("feature", ""))
+                    top_features_display.append(_feature_nombre_amigable(feat_id))
+                elif isinstance(feat, str):
+                    top_features_display.append(_feature_nombre_amigable(feat))
+
+        return {
+            "codigo_dane": codigo_dane,
+            "municipio": municipio,
+            "departamento": departamento,
+            "cultivo": cultivo,
+            "año_referencia": año_ref,
+            "titulo": f"Reporte municipal de riesgo y recomendación - {municipio} / {cultivo}",
+            "contenido_texto": contenido_texto,
+            "secciones": SECCIONES_ORDEN,
+            "fuentes": fuentes,
+            "prediccion_riesgo": prediccion_riesgo,
+            "serie_historica": contexto.serie_historica or [],
+            "top_features_display": top_features_display,
+            "generado_por_llm": True,
+        }
+
+    except Exception as e:
+        if isinstance(e, ValueError) and "No hay predicción disponible" in str(e):
+            raise
+        logger.warning(f"[C3.1] LLM no disponible, usando fallback build_reporte(): {e}")
+        resultado = build_reporte(codigo_dane, municipio, departamento, cultivo)
+        resultado["generado_por_llm"] = False
+        return resultado
 
 
 # ── Renderizado PDF ───────────────────────────────────────────────────────────
@@ -360,6 +492,8 @@ def render_pdf(reporte: dict) -> bytes:
             Paragraph,
             Spacer,
             HRFlowable,
+            Table,
+            TableStyle,
         )
     except ImportError as exc:
         raise ImportError(
@@ -379,6 +513,21 @@ def render_pdf(reporte: dict) -> bytes:
 
     styles = getSampleStyleSheet()
 
+    # --- Estilos base ---
+    style_branding = ParagraphStyle(
+        "Branding",
+        parent=styles["Heading1"],
+        fontSize=20,
+        spaceAfter=2,
+        textColor=colors.HexColor("#1a5276"),
+    )
+    style_branding_sub = ParagraphStyle(
+        "BrandingSub",
+        parent=styles["Normal"],
+        fontSize=10,
+        spaceAfter=15,
+        textColor=colors.HexColor("#555555"),
+    )
     style_titulo = ParagraphStyle(
         "Titulo",
         parent=styles["Heading1"],
@@ -415,22 +564,107 @@ def render_pdf(reporte: dict) -> bytes:
         textColor=colors.HexColor("#888888"),
         alignment=1,  # centrado
     )
+    style_semaforo_text = ParagraphStyle(
+        "SemaforoText",
+        parent=styles["Normal"],
+        fontSize=14,
+        textColor=colors.white,
+        alignment=1,
+    )
 
     story = []
 
-    # Título
-    story.append(Paragraph(reporte["titulo"], style_titulo))
+    # --- 1. Branding (Encabezado) ---
+    story.append(Paragraph("<b>SiembraSegura IA</b>", style_branding))
+    story.append(Paragraph("Plataforma de predicción agrícola — Colombia", style_branding_sub))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#1a5276")))
     story.append(Spacer(1, 0.3 * cm))
 
-    # Metadatos
-    story.append(Paragraph(f"<b>Municipio:</b> {reporte['municipio']}", style_meta))
-    story.append(Paragraph(f"<b>Departamento:</b> {reporte['departamento']}", style_meta))
-    story.append(Paragraph(f"<b>Cultivo:</b> {reporte['cultivo']}", style_meta))
-    story.append(Paragraph(f"<b>Año de referencia:</b> {reporte['año_referencia']}", style_meta))
+    # Título principal
+    story.append(Paragraph(reporte["titulo"], style_titulo))
+    story.append(Spacer(1, 0.3 * cm))
+
+    # --- 2. Semáforo visual de riesgo ---
+    prediccion_riesgo = reporte.get("prediccion_riesgo")
+    if prediccion_riesgo:
+        if prediccion_riesgo == "Bajo":
+            color_fondo = colors.HexColor("#27ae60")
+        elif prediccion_riesgo == "Medio":
+            color_fondo = colors.HexColor("#f39c12")
+        elif prediccion_riesgo == "Alto":
+            color_fondo = colors.HexColor("#e74c3c")
+        else:
+            color_fondo = None
+            logger.warning(f"[C3.2] prediccion_riesgo no reconocido ('{prediccion_riesgo}'), omitiendo semáforo")
+
+        if color_fondo:
+            # Una tabla simple de 1 celda para el recuadro de color
+            tabla_semaforo = Table(
+                [[Paragraph(f"<b>Riesgo: {prediccion_riesgo}</b>", style_semaforo_text)]],
+                colWidths=[5 * cm],
+                rowHeights=[1 * cm],
+            )
+            tabla_semaforo.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), color_fondo),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ]))
+            story.append(tabla_semaforo)
+            story.append(Spacer(1, 0.5 * cm))
+    else:
+        logger.warning("[C3.2] prediccion_riesgo no disponible, omitiendo semáforo")
+
+    # --- 3. Tabla de indicadores clave ---
+    # Filas mínimas
+    datos_tabla = [
+        ["Indicador", "Valor"],
+        ["Municipio", reporte['municipio']],
+        ["Departamento", reporte['departamento']],
+        ["Cultivo", reporte['cultivo']],
+        ["Año de referencia", str(reporte['año_referencia'])],
+    ]
+    if prediccion_riesgo:
+        datos_tabla.append(["Nivel de riesgo", prediccion_riesgo])
+
+    serie = reporte.get("serie_historica")
+    if serie and isinstance(serie, list) and len(serie) > 0:
+        ultimo_rendimiento = None
+        for s in reversed(serie):
+            if s.get("rendimiento") is not None:
+                ultimo_rendimiento = s.get("rendimiento")
+                break
+        if ultimo_rendimiento is not None:
+            datos_tabla.append(["Rendimiento año anterior", f"{ultimo_rendimiento:.2f} t/ha"])
+
+    top_feat = reporte.get("top_features_display")
+    if top_feat and isinstance(top_feat, list) and len(top_feat) > 0:
+        datos_tabla.append(["Factor principal", top_feat[0]])
+
+    tabla_indicadores = Table(datos_tabla, colWidths=[6 * cm, 10 * cm])
+    estilos_tabla = [
+        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor("#1a5276")),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+    ]
+    # Filas alternas
+    for i in range(1, len(datos_tabla)):
+        if i % 2 == 0:
+            estilos_tabla.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor("#eaf4fb")))
+        else:
+            estilos_tabla.append(('BACKGROUND', (0, i), (-1, i), colors.white))
+
+    tabla_indicadores.setStyle(TableStyle(estilos_tabla))
+    story.append(tabla_indicadores)
     story.append(Spacer(1, 0.5 * cm))
 
-    # Secciones
+    # --- 4. Secciones de texto ---
     contenido = reporte.get("contenido_texto", "")
     # Parsear secciones del contenido_texto
     bloques = contenido.split("\n\n")
@@ -451,11 +685,12 @@ def render_pdf(reporte: dict) -> bytes:
                         story.append(Paragraph(linea, style_cuerpo))
             story.append(Spacer(1, 0.2 * cm))
 
-    # Footer
+    # --- 5. Footer ---
     story.append(Spacer(1, 1 * cm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
     story.append(Spacer(1, 0.2 * cm))
-    story.append(Paragraph("Generado por SiembraSegura IA", style_footer))
+    hoy = datetime.date.today().isoformat()
+    story.append(Paragraph(f"Generado por SiembraSegura IA el {hoy}", style_footer))
 
     doc.build(story)
     return buffer.getvalue()

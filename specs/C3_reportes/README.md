@@ -29,9 +29,9 @@ con contenido generado por LLM, identidad visual de SiembraSegura IA y elementos
 
 | ID   | Archivo          | Qué hace                                                                 | Depende de       | Estado      |
 | ---- | ---------------- | ------------------------------------------------------------------------ | ---------------- | ----------- |
-| C3.1 | `C3.1_llm.md`    | Agrega `build_reporte_umata_llm()` que usa C2.2 + LLM para el contenido | C1 (rag.py), C2.2 (prompts.py), chat_engine.py | 🔲 Pendiente |
-| C3.2 | `C3.2_visual.md` | Mejora `render_pdf()` con logo, semáforo de color y tabla de datos       | C3.1             | 🔲 Pendiente |
-| C3.3 | `C3.3_validacion.md` | Script `validate_c3.py` que valida C3.1 y C3.2 end-to-end           | C3.1, C3.2       | 🔲 Pendiente |
+| C3.1 | `C3.1_llm.md`    | Agrega `build_reporte_umata_llm()` que usa C2.2 + LLM para el contenido | C1 (rag.py), C2.2 (prompts.py), chat_engine.py | ✅ Completo |
+| C3.2 | `C3.2_visual.md` | Mejora `render_pdf()` con logo, semáforo de color y tabla de datos       | C3.1             | ✅ Completo |
+| C3.3 | `C3.3_validacion.md` | Script `validate_c3.py` que valida C3.1 y C3.2 end-to-end           | C3.1, C3.2       | ✅ Completo |
 
 ---
 

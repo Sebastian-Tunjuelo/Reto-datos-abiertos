@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, RefreshCw, Info } from "lucide-react";
+import { ArrowLeft, AlertTriangle, RefreshCw, Info, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import MunicipioHeader from "@/components/ficha/MunicipioHeader";
@@ -342,7 +342,13 @@ export default function FichaMunicipal({ codigo_dane, cultivo, anioParam }: Prop
             )}
 
             {/* Retry button */}
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end gap-2 pt-2">
+              <Link href={`/asistente?municipio=${state.codigo_dane}&cultivo=${encodeURIComponent(state.cultivo)}`}>
+                <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
+                  <MessageSquare className="size-3.5" />
+                  Consultar asistente
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={load} className="text-muted-foreground">
                 <RefreshCw className="size-3.5 mr-1.5" />
                 Actualizar
