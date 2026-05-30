@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
+import { GeoJSON, MapContainer, TileLayer, ZoomControl } from "react-leaflet";
 import type { Layer, PathOptions } from "leaflet";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import { ETIQUETA_FILL, getBaseStyle } from "@/lib/map-styles";
+export { getBaseStyle };
+import {
+  MIN_ZOOM,
+  MAX_ZOOM,
+  DEFAULT_ZOOM,
+  DEFAULT_CENTER,
+  COLOMBIA_BOUNDS,
+} from "@/components/mapa-constants";
+export { MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM, DEFAULT_CENTER, COLOMBIA_BOUNDS };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,13 +70,6 @@ const ETIQUETA_COLOR: Record<EtiquetaRiesgo, string> = {
   Medio: "var(--riesgo-medio)",
   Alto: "var(--riesgo-alto)",
   "Sin datos": "var(--riesgo-sin-datos)",
-};
-
-const ETIQUETA_FILL: Record<EtiquetaRiesgo, string> = {
-  Bajo: "#16a34a",
-  Medio: "#f59e0b",
-  Alto: "#dc2626",
-  "Sin datos": "#9ca3af",
 };
 
 const ANIOS_DISPONIBLES = [2025, 2026, 2027];
@@ -410,7 +414,7 @@ export default function MapaColombia() {
   return (
     <div className="w-full flex flex-col gap-4">
       {/* Controls */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="relative z-[1001] flex flex-wrap gap-3 items-center" style={{ pointerEvents: 'auto' }}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Cultivo
@@ -426,7 +430,7 @@ export default function MapaColombia() {
             <SelectTrigger className="w-36">
               <SelectValue placeholder="Seleccionar…" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent style={{ zIndex: 1001 }}>
               {cultivos.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
@@ -450,7 +454,7 @@ export default function MapaColombia() {
             <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent style={{ zIndex: 1001 }}>
               {ANIOS_DISPONIBLES.map((y) => (
                 <SelectItem key={y} value={String(y)}>
                   {y}
@@ -529,11 +533,16 @@ export default function MapaColombia() {
         {geo && (
           <MapContainer
             style={{ height: "100%", width: "100%" }}
-            center={[4.57, -74.3]}
-            zoom={6}
-            scrollWheelZoom={false}
-            zoomControl={true}
+            center={DEFAULT_CENTER}
+            zoom={DEFAULT_ZOOM}
+            scrollWheelZoom={true}
+            zoomControl={false}
+            minZoom={MIN_ZOOM}
+            maxZoom={MAX_ZOOM}
+            maxBounds={COLOMBIA_BOUNDS}
+            maxBoundsViscosity={1.0}
           >
+            <ZoomControl position="bottomleft" />
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
