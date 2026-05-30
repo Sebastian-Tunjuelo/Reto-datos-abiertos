@@ -11,6 +11,8 @@ interface Mensaje {
   role: "user" | "assistant";
   content: string;
   fuentes?: string[];
+  tokensUsados?: number;
+  proveedorLlm?: string;
   timestamp: Date;
   isError?: boolean;
 }
@@ -87,6 +89,8 @@ export default function ChatAsistente({
         role: "assistant",
         content: data.respuesta,
         fuentes: data.fuentes,
+        tokensUsados: data.tokens_usados,
+        proveedorLlm: data.proveedor_llm,
         timestamp: new Date(),
       };
       setMensajes((prev) => [...prev, assistantMsg]);
@@ -167,6 +171,26 @@ export default function ChatAsistente({
                         {fuente}
                       </Badge>
                     ))}
+                  </div>
+                )}
+                {msg.role === "assistant" && !msg.isError && (msg.tokensUsados !== undefined || msg.proveedorLlm) && (
+                  <div className="mt-1 flex flex-wrap gap-1 items-center">
+                    {msg.proveedorLlm && (
+                      <Badge variant="outline" className="text-[10px] text-primary/70 bg-primary/5 border-primary/20 gap-1">
+                        <span className="size-1.5 rounded-full bg-primary/50 inline-block" />
+                        {msg.proveedorLlm}
+                      </Badge>
+                    )}
+                    {msg.tokensUsados !== undefined && msg.tokensUsados > 0 && (
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground bg-background border-border/60">
+                        {msg.tokensUsados.toLocaleString()} tokens
+                      </Badge>
+                    )}
+                    {msg.tokensUsados === 0 && (
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground bg-background border-border/60">
+                        RAG local
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>

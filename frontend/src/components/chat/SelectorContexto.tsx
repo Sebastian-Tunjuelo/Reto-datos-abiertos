@@ -45,8 +45,10 @@ export default function SelectorContexto({
         return res.json();
       })
       .then((data) => {
-        if (data.municipios) {
-          setMunicipios(data.municipios);
+        // El API devuelve un array directo o un objeto con clave 'municipios'
+        const lista = Array.isArray(data) ? data : (data.municipios ?? []);
+        if (lista.length > 0) {
+          setMunicipios(lista);
         }
       })
       .catch(() => {

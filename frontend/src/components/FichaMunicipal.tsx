@@ -127,18 +127,7 @@ export default function FichaMunicipal({ codigo_dane, cultivo, anioParam }: Prop
 
   const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-  // Validate codigo_dane
-  if (!/^\d{5}$/.test(codigo_dane)) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-12 text-center">
-        <AlertTriangle className="size-10 text-destructive mx-auto mb-3" />
-        <p className="font-semibold text-destructive">Código DANE inválido: {codigo_dane}</p>
-        <Link href="/" className="mt-4 inline-block text-sm text-primary underline">
-          ← Volver al mapa
-        </Link>
-      </div>
-    );
-  }
+
 
   async function load() {
     setState((s) => ({ ...s, estado: "cargando" }));
@@ -239,9 +228,24 @@ export default function FichaMunicipal({ codigo_dane, cultivo, anioParam }: Prop
   }
 
   useEffect(() => {
-    load();
+    if (/^\d{5}$/.test(codigo_dane)) {
+      load();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codigo_dane, cultivo, anioParam]);
+
+  // Validate codigo_dane
+  if (!/^\d{5}$/.test(codigo_dane)) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+        <AlertTriangle className="size-10 text-destructive mx-auto mb-3" />
+        <p className="font-semibold text-destructive">Código DANE inválido: {codigo_dane}</p>
+        <Link href="/" className="mt-4 inline-block text-sm text-primary underline">
+          ← Volver al mapa
+        </Link>
+      </div>
+    );
+  }
 
   // ── Render ──────────────────────────────────────────────────────────────────
 

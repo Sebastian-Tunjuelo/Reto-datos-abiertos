@@ -17,8 +17,16 @@ MODELS_DIR = Path(os.getenv("MODELS_DIR", str(ROOT_DIR / "models")))
 # API
 SOCRATA_APP_TOKEN = os.getenv("SOCRATA_APP_TOKEN", "")
 POSTGRES_URL = os.getenv("POSTGRES_URL", "")
+
+# LLM — Gemini (puede ser una sola key o varias separadas por coma)
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
-LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.0-flash")
+# Lista de keys para rotación: ["key1", "key2", ...]
+LLM_API_KEYS: list[str] = [k.strip() for k in LLM_API_KEY.split(",") if k.strip()]
+
+# LLM Fallback — Anthropic Claude (solo si todas las keys de Gemini fallan)
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

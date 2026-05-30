@@ -182,6 +182,8 @@ class ChatResponse(BaseModel):
     contexto_usado: dict
     fuentes: List[str]
     reporte_disponible: bool
+    tokens_usados: int = 0
+    proveedor_llm: str = ""
 
 @app.get("/municipios", response_model=List[MunicipioItem])
 def get_municipios():
@@ -637,7 +639,9 @@ def chat(req: ChatRequest):
             tono_aplicado=resultado["tono_aplicado"],
             contexto_usado=resultado["contexto_usado"],
             fuentes=resultado["fuentes"],
-            reporte_disponible=resultado["reporte_disponible"]
+            reporte_disponible=resultado["reporte_disponible"],
+            tokens_usados=resultado.get("tokens_usados", 0),
+            proveedor_llm=resultado.get("proveedor_llm", ""),
         )
         
     except HTTPException:

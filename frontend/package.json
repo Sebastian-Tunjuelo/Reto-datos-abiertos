@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
@@ -16,7 +19,6 @@
     "next": "14.2.0",
     "plotly.js-basic-dist-min": "^3.5.1",
     "plotly.js-dist-min": "^3.5.1",
-    "radix-ui": "^1.4.3",
     "react": "^18",
     "react-dom": "^18",
     "react-leaflet": "^4.2.1",
