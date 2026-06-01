@@ -7,6 +7,7 @@ import joblib
 from copy import deepcopy
 
 from shared.config import MODELS_DIR
+from modules.predictive.risk_rules import calcular_etiqueta_riesgo
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +67,15 @@ def _apply_shock(df: pd.DataFrame, scenario: str) -> tuple[pd.DataFrame, list[st
         
     return df_shock, features_modified
 
-def simulate_scenarios(baseline_row: pd.DataFrame | dict, scenarios: list[str]) -> pd.DataFrame:
+def simulate_scenarios(baseline_row: pd.DataFrame | dict, scenarios: list[str], promedio_historico: float = 0.0) -> pd.DataFrame:
     """
     Genera escenarios contrafactuales de rendimiento y riesgo a partir de una fila base.
+
+    Args:
+        baseline_row:        Fila base con features del municipio/cultivo/año.
+        scenarios:           Lista de escenarios a simular (del SCENARIO_CATALOG).
+        promedio_historico:  Promedio histórico de rendimiento del municipio+cultivo (t/ha).
+                             Se usa para calcular la etiqueta de riesgo determinística.
     """
     if isinstance(baseline_row, dict):
         baseline_row = pd.DataFrame([baseline_row])
@@ -93,33 +100,23 @@ def simulate_scenarios(baseline_row: pd.DataFrame | dict, scenarios: list[str]) 
     cultivo = baseline_row.iloc[0]["cultivo"]
     cultivo_fmt = str(cultivo).lower().replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
     
-    # Cargar modelos y metadatos
+    # Cargar modelos y metadatos (solo el regresor)
     regressor_path = MODELS_DIR / f"xgb_regressor_{cultivo_fmt}.pkl"
     regressor_meta_path = MODELS_DIR / f"xgb_regressor_{cultivo_fmt}_meta.json"
-    classifier_path = MODELS_DIR / f"xgb_classifier_{cultivo_fmt}.pkl"
-    classifier_meta_path = MODELS_DIR / f"xgb_classifier_{cultivo_fmt}_meta.json"
     
-    if not (regressor_path.exists() and regressor_meta_path.exists() and 
-            classifier_path.exists() and classifier_meta_path.exists()):
+    if not (regressor_path.exists() and regressor_meta_path.exists()):
         raise FileNotFoundError(f"Modelos o metadatos no encontrados para cultivo {cultivo}")
         
     regressor = joblib.load(regressor_path)
     with open(regressor_meta_path, "r", encoding="utf-8") as f:
         regressor_meta = json.load(f)
         
-    classifier = joblib.load(classifier_path)
-    with open(classifier_meta_path, "r", encoding="utf-8") as f:
-        classifier_meta = json.load(f)
-        
     reg_features = regressor_meta.get("feature_cols", [])
-    clf_features = classifier_meta.get("feature_cols", [])
     
-    # Validar que baseline tenga todas las features
-    # Permitir que falte la encoded de clasificador si está la original
+    # Validar que baseline tenga todas las features del regresor
     missing_reg = [f for f in reg_features if f not in baseline_row.columns]
-    missing_clf = [f for f in clf_features if f not in baseline_row.columns and f != "señal_riesgo_economico_encoded"]
-    if missing_reg or missing_clf:
-        raise KeyError(f"Faltan features en baseline_row. Reg: {missing_reg}, Clf: {missing_clf}")
+    if missing_reg:
+        raise KeyError(f"Faltan features en baseline_row para el regresor: {missing_reg}")
         
     results = []
     base_rendimiento = None
@@ -131,9 +128,6 @@ def simulate_scenarios(baseline_row: pd.DataFrame | dict, scenarios: list[str]) 
         "lluvioso": "Aumento del 30% en precipitación",
         "fertilizantes": "Aumento del 20% en costo de agroinsumos"
     }
-
-    # Riesgo map to label if numeric
-    risk_labels = {0: "Bajo", 1: "Medio", 2: "Alto"}
     
     for esc in scenarios:
         df_esc, mod_features = _apply_shock(baseline_row, esc)
@@ -141,52 +135,20 @@ def simulate_scenarios(baseline_row: pd.DataFrame | dict, scenarios: list[str]) 
         # Reordenar predictoras
         X_reg = df_esc.copy()
         
-        # El clasificador requiere la versión encoded de la señal económica
-        if "señal_riesgo_economico_encoded" in clf_features and "señal_riesgo_economico" in X_reg.columns:
-            # Map based on what train_classifier did
-            risk_map = {"bajo": 0, "medio": 1, "alto": 2}
-            def safe_lower(val):
-                if pd.isna(val): return val
-                return str(val).strip().lower()
-            if not pd.api.types.is_numeric_dtype(X_reg["señal_riesgo_economico"]):
-                X_reg["señal_riesgo_economico_encoded"] = X_reg["señal_riesgo_economico"].apply(safe_lower).map(risk_map)
-            else:
-                X_reg["señal_riesgo_economico_encoded"] = X_reg["señal_riesgo_economico"]
-                
         # Asegurar tipos numéricos para XGBoost
-        for col in reg_features + clf_features:
+        for col in reg_features:
             if col in X_reg.columns:
                 X_reg[col] = pd.to_numeric(X_reg[col], errors='coerce')
         
         # XGBoost expects the columns in the exact order as its internal feature_names.
-        # Although we reorder based on meta, we must ensure it matches booster's native columns exactly.
-        # The booster's expected features are retrieved from regressor.get_booster().feature_names
-        # if available.
         actual_reg_features = getattr(regressor, "feature_names_in_", reg_features)
         X_reg_ordered = X_reg[actual_reg_features]
         
-        actual_clf_features = getattr(classifier, "feature_names_in_", clf_features)
-        X_clf_ordered = X_reg[actual_clf_features]
-        
-        # Puesto que es una fila
+        # Predecir rendimiento
         rendimiento_pred = float(regressor.predict(X_reg_ordered)[0])
         
-        # Prob risk (assuming multiclass where class 2 is high risk, or binary where class 1 is high risk)
-        # We need to get prob of HIGH risk. Let's assume binary (1=Alto, 0=Bajo/Medio) or multiclass (class 'Alto')
-        try:
-            proba = classifier.predict_proba(X_clf_ordered)[0]
-            if len(proba) == 3: # 0=Bajo, 1=Medio, 2=Alto
-                prob_riesgo_alto = float(proba[2])
-                pred_label_idx = int(np.argmax(proba))
-                etiqueta = risk_labels.get(pred_label_idx, str(pred_label_idx))
-            else: # Asumiendo binario donde class 1 = Alto
-                prob_riesgo_alto = float(proba[1])
-                etiqueta = "Alto" if prob_riesgo_alto > 0.5 else "Bajo/Medio"
-        except:
-            # Fallback if no predict_proba
-            pred = classifier.predict(X_clf)[0]
-            prob_riesgo_alto = 1.0 if pred == 2 else 0.0 # Placeholder
-            etiqueta = risk_labels.get(int(pred), str(pred))
+        # Calcular etiqueta de riesgo determinística
+        etiqueta, prob_riesgo_alto = calcular_etiqueta_riesgo(rendimiento_pred, promedio_historico)
             
         if esc == "base":
             base_rendimiento = rendimiento_pred

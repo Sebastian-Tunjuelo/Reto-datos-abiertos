@@ -50,6 +50,8 @@ class RagDocument:
     señal_riesgo_economico: Optional[str]
     target_rendimiento: Optional[float]
     area_sembrada_t1: Optional[float]
+    rendimiento_esperado: Optional[float]
+    etiqueta_riesgo: Optional[str]
 
 
 class RagIndex:
@@ -203,6 +205,8 @@ def build_rag_index(path: Optional[Path] = None) -> RagIndex:
             señal_riesgo_economico=_safe_str(row.get("señal_riesgo_economico")),
             target_rendimiento=_safe_float(row.get("target_rendimiento")),
             area_sembrada_t1=_safe_float(row.get("area_sembrada_t1")),
+            rendimiento_esperado=_safe_float(row.get("rendimiento_esperado")),
+            etiqueta_riesgo=_safe_str(row.get("etiqueta_riesgo")),
         )
 
         key = (codigo_norm, cultivo_norm)
@@ -471,8 +475,8 @@ def recuperar_contexto(
 
             # --- 5. Construir ContextoRecuperado desde el documento ---
             resultado.prediccion = {
-                "rendimiento_esperado": doc.rendimiento_t1,
-                "etiqueta_riesgo": doc.prediccion_riesgo,
+                "rendimiento_esperado": doc.rendimiento_esperado,
+                "etiqueta_riesgo": doc.etiqueta_riesgo,
             }
             resultado.fuentes.append("predicciones_con_explicacion.parquet")
 

@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { EtiquetaRiesgo } from "@/components/FichaMunicipal";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   etiqueta: EtiquetaRiesgo;
@@ -53,7 +54,7 @@ export default function RiesgoSemaforo({
       className={cn(
         "rounded-xl border p-5 flex flex-col sm:flex-row sm:items-center gap-4",
         cfg.bg,
-        cfg.border
+        cfg.border,
       )}
     >
       {/* Semáforo dot */}
@@ -62,12 +63,14 @@ export default function RiesgoSemaforo({
           className={cn(
             "inline-flex size-12 rounded-full items-center justify-center shrink-0",
             cfg.dot,
-            "shadow-md"
+            "shadow-md",
           )}
         >
           <span className="size-5 rounded-full bg-white/30" />
         </span>
-        <span className="text-sm font-semibold sm:text-center">{cfg.label}</span>
+        <span className="text-sm font-semibold sm:text-center">
+          {cfg.label}
+        </span>
       </div>
 
       <div className="h-px sm:h-12 sm:w-px bg-border/60 shrink-0" />
@@ -77,22 +80,47 @@ export default function RiesgoSemaforo({
         <Metric
           label="Rendimiento esperado"
           value={rendimiento != null ? `${rendimiento.toFixed(2)} t/ha` : "—"}
+          description="Producción estimada por hectárea. t/ha significa toneladas por hectárea."
         />
         <Metric
           label="Prob. riesgo alto"
-          value={probRiesgoAlto != null ? `${(probRiesgoAlto * 100).toFixed(0)}%` : "—"}
+          value={
+            probRiesgoAlto != null
+              ? `${(probRiesgoAlto * 100).toFixed(0)}%`
+              : "—"
+          }
+          description="Porcentaje estimado de que el cultivo quede en un escenario de riesgo alto."
         />
-        <Metric label="Año proyectado" value={String(anio)} />
-        <Metric label="Cultivo" value={cultivo} />
+        <Metric
+          label="Año proyectado"
+          value={String(anio)}
+          description="Año para el que se calculó la predicción y la recomendación."
+        />
+        <Metric
+          label="Cultivo"
+          value={cultivo}
+          description="Cultivo seleccionado para consultar la ficha y los resultados."
+        />
       </div>
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({
+  label,
+  value,
+  description,
+}: {
+  label: string;
+  value: string;
+  description?: string;
+}) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground uppercase tracking-wide">
+        {label}
+        {description && <InfoTooltip label={label} description={description} />}
+      </span>
       <span className="text-lg font-bold leading-tight">{value}</span>
     </div>
   );

@@ -281,6 +281,7 @@ COLUMNAS_EVA = [
 | M4.3 | `specs/M4_Explicabilidad_SHAP/M4.3_narrativas.md`                          | ✅ Completo | `modules/explainability/narrative_builder.py → build_and_save_narratives_df()`                            |
 | M4.4 | `specs/M4_Explicabilidad_SHAP/M4.4_validacion.md`                          | ✅ Completo | `specs/M4_Explicabilidad_SHAP/validate_m4.py → validate_m4()`                                             |
 | M5.1 | `specs/M5_simulacion_escenarios/M5.1_funcion_escenarios.md`                | ✅ Completo | `modules/predictive/scenarios.py → simulate_scenarios()` + `validate_m5.py`                               |
+| M6.1 | `specs/M6_riesgo_deterministico/M6.1_semaforo_deterministico.md`           | ✅ Completo | `modules/predictive/risk_rules.py → calcular_etiqueta_riesgo()` + `validate_m6.py` (12/12 PASS)          |
 | A3.1 | `specs/A3_api_mvp/A3.1_escenario.md`                                       | ✅ Completo | `orchestrator/main.py → POST /escenario`                                                                  |
 | A3.2 | `specs/A3_api_mvp/A3.2_chat.md`                                             | ✅ Completo | `orchestrator/main.py → POST /chat`                                                                       |
 | A3.3 | `specs/A3_api_mvp/A3.3_reporte.md`                                          | ✅ Completo | `orchestrator/main.py → GET /reporte/{municipio}/{cultivo}`                                               |
@@ -407,7 +408,10 @@ $group=cod_dane_m,municipio,departamen,aptitud
 | `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados.                                                              |
 | `modules/explainability/`           | ✅ M4 Completo — SHAP validado, `predicciones_con_explicacion.parquet` generado (395 registros). Pipeline ejecutable vía `scripts/run_m4_pipeline.py`. |
 | `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`. C1.1–C1.3 Completos — `RagDocument`, `RagIndex`, `build_rag_index()`, `get_rag_index()`, `_score_document()`, `recuperar_contexto()` refactorizado para usar el índice. `validate_c1.py` 19/19 PASS. |
-| `orchestrator/`                     | ✅ A1–A3 Completas. Bug fix en `POST /predecir`: features leídas del booster + `señal_riesgo_economico` mapeada a encoded.                                                  |
+| `modules/predictive/`               | ✅ D5, M1, M2, M3 y M5 Completos. Modelos XGBoost entrenados para rendimiento y riesgo y escenarios simulados. **M6.1 Completo** — `risk_rules.py → calcular_etiqueta_riesgo()` reemplaza el clasificador M3 con reglas determinísticas. |
+| `modules/explainability/`           | ✅ M4 Completo — SHAP validado, `predicciones_con_explicacion.parquet` generado (395 registros). Pipeline ejecutable vía `scripts/run_m4_pipeline.py`. |
+| `modules/conversational/`           | ✅ A3.2 Completo — `rag.py`, `prompts.py`, `chat_engine.py` (Google Gemini `gemini-2.0-flash`). A3.3 Completo — `reports.py`. C1.1–C1.3 Completos — `RagDocument`, `RagIndex`, `build_rag_index()`, `get_rag_index()`, `_score_document()`, `recuperar_contexto()` refactorizado para usar el índice. `validate_c1.py` 19/19 PASS. |
+| `orchestrator/`                     | ✅ A1–A3 Completas. **M6.1**: `POST /predecir` usa semáforo determinístico + proyección dinámica multi-año (hasta max+5). `POST /escenario` usa `calcular_etiqueta_riesgo`. Clasificador XGBoost eliminado de ambos endpoints. |
 | `frontend/`                         | ✅ F1, F2, F3 completos. Mapa interactivo → Ficha municipal → Comparador de cultivos. CORS configurado. `react-plotly.js` instalado. GeoJSON generado para 15 municipios MVP. |
 
 ---

@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AlertTriangle } from "lucide-react";
 
 interface Municipio {
@@ -32,13 +38,17 @@ export default function SelectorContexto({
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [cultivos, setCultivos] = useState<string[]>([]);
   const [errorMunicipios, setErrorMunicipios] = useState(false);
-  
+
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+  const selectedMunicipio = municipios.find(
+    (m) => m.codigo_dane === municipio || m.municipio === municipio,
+  );
+  const municipioVisible = selectedMunicipio?.municipio ?? municipio;
 
   // Cargar municipios al montar
   useEffect(() => {
     if (!apiBase) return;
-    
+
     fetch(`${apiBase}/municipios`)
       .then((res) => {
         if (!res.ok) throw new Error("Error loading municipios");
@@ -61,8 +71,9 @@ export default function SelectorContexto({
   useEffect(() => {
     if (!apiBase || !municipio) return;
 
-    const selectedMuni = municipios.find(m => m.municipio === municipio);
-    const codigoDane = selectedMuni ? selectedMuni.codigo_dane : municipio;
+    const codigoDane = selectedMunicipio
+      ? selectedMunicipio.codigo_dane
+      : municipio;
 
     fetch(`${apiBase}/cultivos/${codigoDane}`)
       .then((res) => {
@@ -79,19 +90,31 @@ export default function SelectorContexto({
       .catch(() => {
         setCultivos(["Café", "Cacao", "Maíz"]);
       });
-  }, [apiBase, municipio, municipios]);
+  }, [apiBase, municipio, municipios, selectedMunicipio]);
+
+  useEffect(() => {
+    if (!selectedMunicipio) return;
+    if (municipio !== selectedMunicipio.municipio) {
+      onMunicipioChange(
+        selectedMunicipio.municipio,
+        selectedMunicipio.codigo_dane,
+      );
+    }
+  }, [municipio, onMunicipioChange, selectedMunicipio]);
 
   if (!apiBase) {
     return (
       <div className="rounded-lg border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2 mb-4">
         <AlertTriangle className="size-4 shrink-0" />
-        <span>API no configurada. Configura NEXT_PUBLIC_API_BASE_URL en .env.local</span>
+        <span>
+          API no configurada. Configura NEXT_PUBLIC_API_BASE_URL en .env.local
+        </span>
       </div>
     );
   }
 
   const handleMunicipioChange = (val: string) => {
-    const selectedMuni = municipios.find(m => m.municipio === val);
+    const selectedMuni = municipios.find((m) => m.municipio === val);
     if (selectedMuni) {
       onMunicipioChange(selectedMuni.municipio, selectedMuni.codigo_dane);
     }
@@ -100,14 +123,22 @@ export default function SelectorContexto({
   return (
     <div className="flex flex-col sm:flex-row gap-4 w-full">
       <div className="flex-1 space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Municipio</label>
+        <label className="text-xs font-medium text-muted-foreground">
+          Municipio
+        </label>
         <Select
-          value={municipio}
+          value={municipioVisible}
           onValueChange={handleMunicipioChange}
           disabled={disabled || municipios.length === 0}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={errorMunicipios ? "No se pudieron cargar los municipios" : "Selecciona un municipio"} />
+            <SelectValue
+              placeholder={
+                errorMunicipios
+                  ? "No se pudieron cargar los municipios"
+                  : "Selecciona un municipio"
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             {municipios.map((m) => (
@@ -120,7 +151,9 @@ export default function SelectorContexto({
       </div>
 
       <div className="flex-1 space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Cultivo</label>
+        <label className="text-xs font-medium text-muted-foreground">
+          Cultivo
+        </label>
         <Select
           value={cultivo}
           onValueChange={onCultivoChange}
@@ -140,10 +173,14 @@ export default function SelectorContexto({
       </div>
 
       <div className="flex-1 space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Tono de respuesta</label>
+        <label className="text-xs font-medium text-muted-foreground">
+          Tono de respuesta
+        </label>
         <Select
           value={tono}
-          onValueChange={(val: "campesino" | "institucional") => onTonoChange(val)}
+          onValueChange={(val: "campesino" | "institucional") =>
+            onTonoChange(val)
+          }
           disabled={disabled}
         >
           <SelectTrigger className="w-full">

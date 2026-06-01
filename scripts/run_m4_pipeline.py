@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from shared.config import CULTIVOS_MVP, DATA_DIR, MODELS_DIR
+from shared.config import CULTIVOS_MVP, DATA_DIR, MODELS_DIR, RENDIMIENTO_RANGOS
 from modules.explainability.shap_calculator import build_and_save_explainers
 from modules.explainability.feature_extractor import get_top_n_features
 from modules.explainability.narrative_builder import build_and_save_narratives_df
@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 
 FEATURE_MATRIX_PATH = DATA_DIR / "feature_matrix.parquet"
 OUTPUT_PATH = DATA_DIR / "predicciones_con_explicacion.parquet"
+
+# Mapeo canónico de etiquetas de riesgo — única fuente de verdad en este módulo
+RIESGO_LABEL_MAP = {0: "Bajo", 1: "Medio", 2: "Alto"}
 
 # Mapeo de features a nombres amigables
 FEATURE_MAPPING = {
@@ -101,6 +104,27 @@ def load_classifier_and_meta(cultivo: str):
     return model, meta
 
 
+def load_regressor_and_meta(cultivo: str):
+    """Carga el regresor XGBoost y sus metadatos para un cultivo."""
+    cultivo_slug = cultivo.lower().replace("é", "e").replace("í", "i")
+
+    model_path = MODELS_DIR / f"xgb_regressor_{cultivo_slug}.pkl"
+    meta_path = MODELS_DIR / f"xgb_regressor_{cultivo_slug}_meta.json"
+
+    if not model_path.exists():
+        raise FileNotFoundError(f"Regresor no encontrado: {model_path}")
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Metadatos del regresor no encontrados: {meta_path}")
+
+    import joblib
+    model = joblib.load(model_path)
+
+    with open(meta_path, "r", encoding="utf-8") as f:
+        meta = json.load(f)
+
+    return model, meta
+
+
 def predict_risk_labels(model, X: pd.DataFrame) -> np.ndarray:
     """Predice etiquetas de riesgo (0=Bajo, 1=Medio, 2=Alto)."""
     probas = model.predict_proba(X)
@@ -122,9 +146,8 @@ def predict_risk_labels(model, X: pd.DataFrame) -> np.ndarray:
 
 
 def label_to_text(label: int) -> str:
-    """Convierte etiqueta numérica a texto."""
-    mapping = {0: "Bajo", 1: "Medio", 2: "Alto"}
-    return mapping.get(label, "Desconocido")
+    """Convierte etiqueta numérica a texto usando RIESGO_LABEL_MAP."""
+    return RIESGO_LABEL_MAP.get(label, "Desconocido")
 
 
 def _align_feature_matrix(df: pd.DataFrame) -> pd.DataFrame:
@@ -194,7 +217,7 @@ def run_m4_pipeline():
         feature_cols = explainer_data["feature_cols"]
         expected_value = explainer_data["expected_value"]
         
-        # Cargar modelo para predicciones
+        # Cargar modelo clasificador para predicciones de riesgo
         model, meta = load_classifier_and_meta(cultivo)
         
         # Preparar X en orden correcto
@@ -202,6 +225,18 @@ def run_m4_pipeline():
         
         # Predecir riesgo
         labels = predict_risk_labels(model, X)
+        
+        # Cargar regresor y predecir rendimiento esperado
+        regressor, reg_meta = load_regressor_and_meta(cultivo)
+        reg_features = regressor.get_booster().feature_names or reg_meta.get("feature_cols", reg_meta.get("features", []))
+        
+        # Construir X_reg con las features del regresor
+        X_reg = df_cultivo[reg_features].copy()
+        # Aplicar el mismo tratamiento de señal_riesgo_economico que en orchestrator/main.py:
+        # la columna es object/None en la feature_matrix; el regresor fue entrenado con la
+        # versión encoded (int64), por lo que se mapea desde señal_riesgo_economico_encoded
+        # que está en df_cultivo (generada por _align_feature_matrix).
+        X_reg["señal_riesgo_economico"] = df_cultivo["señal_riesgo_economico_encoded"].fillna(0).values
         
         # Normalizar SHAP values (puede ser lista para multiclase)
         if isinstance(shap_values, list):
@@ -230,6 +265,12 @@ def run_m4_pipeline():
         df_cultivo["prediccion_riesgo"] = [label_to_text(l) for l in labels]
         df_cultivo["top_features"] = top_features_list
         
+        # Predecir rendimiento esperado con el regresor
+        df_cultivo["rendimiento_esperado"] = regressor.predict(X_reg).astype("float64")
+        
+        # Derivar etiqueta_riesgo desde prediccion_riesgo (ya es string "Bajo"/"Medio"/"Alto")
+        df_cultivo["etiqueta_riesgo"] = df_cultivo["prediccion_riesgo"]
+        
         all_results.append(df_cultivo)
         logger.info(f"{cultivo}: {len(df_cultivo)} registros procesados")
     
@@ -253,7 +294,10 @@ def run_m4_pipeline():
     logger.info(f"Resultado guardado en {OUTPUT_PATH}")
     
     # Verificar columnas
-    required_cols = {"codigo_dane", "cultivo", "prediccion_riesgo", "narrativa_riesgo"}
+    required_cols = {
+        "codigo_dane", "cultivo", "prediccion_riesgo", "narrativa_riesgo",
+        "rendimiento_esperado", "etiqueta_riesgo",
+    }
     missing = required_cols - set(df_final.columns)
     if missing:
         logger.warning(f"Columnas faltantes: {missing}")

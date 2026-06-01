@@ -7,11 +7,13 @@ import pandas as pd
 import joblib
 import json
 import logging
+import numpy as np
 
 from modules.agricultural.ingestion import load_eva_completa
 from modules.climate.ingestion import load_clima_agregado
 from modules.predictive.feature_builder import _agregar_anual, _pendiente_3a
 from modules.predictive.scenarios import simulate_scenarios, SCENARIO_CATALOG
+from modules.predictive.risk_rules import calcular_etiqueta_riesgo
 
 from shared.dane_codes import MVP_CODIGOS, DANE_TO_NAME, DANE_TO_DEPT, get_codigo
 from shared.normalization import normalize_dane_code, normalize_cultivo, normalize_name
@@ -411,43 +413,48 @@ def predecir(req: PrediccionRequest):
     df_filtered = df[(df["codigo_dane"] == codigo_norm) & (df["cultivo_norm"] == cultivo_norm)].copy()
     if df_filtered.empty:
         raise HTTPException(status_code=404, detail="No hay datos históricos para este municipio y cultivo")
-    
+
+    # Calcular promedio histórico para el semáforo determinístico
+    if "target_rendimiento" in df_filtered.columns and df_filtered["target_rendimiento"].notna().any():
+        promedio_historico = float(df_filtered["target_rendimiento"].dropna().mean())
+    elif "rendimiento_t1" in df_filtered.columns and df_filtered["rendimiento_t1"].notna().any():
+        promedio_historico = float(df_filtered["rendimiento_t1"].dropna().mean())
+    else:
+        promedio_historico = 0.0
+
     max_year = df_filtered["año"].max()
     if req.año <= max_year:
         raise HTTPException(status_code=422, detail="El año objetivo debe ser futuro (mayor al último dato histórico)")
-    
-    last_row = df_filtered[df_filtered["año"] == max_year].iloc[0]
-    
+
+    if req.año > max_year + 5:
+        raise HTTPException(status_code=422, detail="El año objetivo no puede superar en más de 5 años el último dato histórico")
+
     c_file = normalize_name(cultivo_norm).lower()
     
     reg_model_path = MODELS_DIR / f"xgb_regressor_{c_file}.pkl"
     reg_meta_path = MODELS_DIR / f"xgb_regressor_{c_file}_meta.json"
-    clf_model_path = MODELS_DIR / f"xgb_classifier_{c_file}.pkl"
-    clf_meta_path = MODELS_DIR / f"xgb_classifier_{c_file}_meta.json"
     
-    if not (reg_model_path.exists() and reg_meta_path.exists() and clf_model_path.exists() and clf_meta_path.exists()):
+    if not (reg_model_path.exists() and reg_meta_path.exists()):
         raise HTTPException(status_code=500, detail="Modelos o metadatos no encontrados para el cultivo solicitado")
     
     with open(reg_meta_path, "r", encoding="utf-8") as f:
         reg_meta = json.load(f)
-    with open(clf_meta_path, "r", encoding="utf-8") as f:
-        clf_meta = json.load(f)
 
     regressor = joblib.load(reg_model_path)
-    classifier = joblib.load(clf_model_path)
 
     # Leer features directamente del booster (fuente de verdad)
     reg_features = regressor.get_booster().feature_names or reg_meta.get("feature_cols", reg_meta.get("features", []))
-    clf_features = classifier.get_booster().feature_names or clf_meta.get("feature_cols", clf_meta.get("features", []))
-    
+
+    last_row = df_filtered[df_filtered["año"] == max_year].iloc[0]
+
+    # Construir historial de rendimientos para proyección dinámica
+    hist_rendimientos = list(
+        df_filtered.sort_values("año")["rendimiento_t1"].dropna().tail(3).values
+    )
+
     row_dict = last_row.to_dict()
-    row_dict["año"] = req.año
-    
-    # señal_riesgo_economico en la feature_matrix es object (None); el regresor
-    # fue entrenado con esa columna pero XGBoost la trató como 0.
-    # Usamos la versión encoded (int) para ambos modelos.
     row_dict["señal_riesgo_economico"] = row_dict.get("señal_riesgo_economico_encoded", 0) or 0
-    
+
     def build_vector(feats):
         import math
         result = []
@@ -463,31 +470,37 @@ def predecir(req: PrediccionRequest):
             result.append(val)
         return result
 
-    X_reg = pd.DataFrame([build_vector(reg_features)], columns=reg_features)
-    X_clf = pd.DataFrame([build_vector(clf_features)], columns=clf_features)
-    
-    rend_esperado = float(regressor.predict(X_reg)[0])
-    probas = classifier.predict_proba(X_clf)[0]
-    
-    classes_ = getattr(classifier, "classes_", [0, 1, 2])
-    if len(probas) == 2:
-        prob_alto = float(probas[1])
-    elif len(probas) > 2:
-        if 2 in classes_:
-            idx = list(classes_).index(2)
-            prob_alto = float(probas[idx])
-        else:
-            prob_alto = float(probas[-1])
-    else:
-        prob_alto = 0.0
-        
-    if prob_alto >= UMBRAL_RIESGO_ALTO:
-        etiqueta = "Alto"
-    elif prob_alto >= UMBRAL_RIESGO_MEDIO:
-        etiqueta = "Medio"
-    else:
-        etiqueta = "Bajo"
-        
+    # Proyección iterativa si el año objetivo es más de 1 año en el futuro
+    rend_esperado_final = None
+    for año_iter in range(max_year + 1, req.año + 1):
+        row_dict["año"] = año_iter
+
+        # Actualizar features de rezago con valores predichos anteriores
+        if hist_rendimientos:
+            row_dict["rendimiento_t1"] = float(hist_rendimientos[-1])
+            if len(hist_rendimientos) >= 3:
+                row_dict["rendimiento_prom3a"] = float(np.mean(hist_rendimientos[-3:]))
+            elif len(hist_rendimientos) >= 1:
+                row_dict["rendimiento_prom3a"] = float(np.mean(hist_rendimientos))
+
+            # Tendencia: pendiente lineal de los últimos 3 valores
+            vals = hist_rendimientos[-3:] if len(hist_rendimientos) >= 2 else None
+            if vals and len(vals) >= 2:
+                x = np.arange(len(vals), dtype=float)
+                row_dict["tendencia_rend_3a"] = float(np.polyfit(x, vals, 1)[0])
+
+        # Predecir rendimiento para este año
+        X_reg_iter = pd.DataFrame([build_vector(reg_features)], columns=reg_features)
+        rend_iter = float(regressor.predict(X_reg_iter)[0])
+
+        # Agregar al historial para el siguiente año
+        hist_rendimientos.append(rend_iter)
+        rend_esperado_final = rend_iter
+
+    rend_esperado = rend_esperado_final if rend_esperado_final is not None else float(regressor.predict(pd.DataFrame([build_vector(reg_features)], columns=reg_features))[0])
+
+    etiqueta, prob_alto = calcular_etiqueta_riesgo(rend_esperado, promedio_historico)
+
     return PrediccionResponse(
         codigo_dane=codigo_norm,
         municipio=DANE_TO_NAME[codigo_norm],
@@ -550,9 +563,17 @@ def post_escenario(req: EscenarioRequest):
         
     baseline_row = df_filtered[df_filtered['año'] == max_año_historico].copy()
     baseline_row['año'] = req.año
+
+    # Calcular promedio histórico para el semáforo determinístico
+    if "target_rendimiento" in df_filtered.columns and df_filtered["target_rendimiento"].notna().any():
+        promedio_historico_esc = float(df_filtered["target_rendimiento"].dropna().mean())
+    elif "rendimiento_t1" in df_filtered.columns and df_filtered["rendimiento_t1"].notna().any():
+        promedio_historico_esc = float(df_filtered["rendimiento_t1"].dropna().mean())
+    else:
+        promedio_historico_esc = 0.0
     
     try:
-        df_resultados = simulate_scenarios(baseline_row, esc_limpios)
+        df_resultados = simulate_scenarios(baseline_row, esc_limpios, promedio_historico=promedio_historico_esc)
     except FileNotFoundError:
         raise HTTPException(status_code=503, detail='Artefactos de escenarios no disponibles')
     except KeyError as e:

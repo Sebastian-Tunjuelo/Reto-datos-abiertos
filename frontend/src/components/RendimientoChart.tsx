@@ -2,6 +2,7 @@
 
 import React from "react";
 import Plot from "react-plotly.js";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface SeriePunto {
   año: number;
@@ -67,12 +68,21 @@ export default function RendimientoChart({ serie, cultivo }: Props) {
   };
 
   return (
-    <Plot
-      data={traces}
-      layout={layout}
-      config={{ displayModeBar: false, responsive: true }}
-      style={{ width: "100%" }}
-      useResizeHandler
-    />
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center gap-1.5 mb-3">
+        <h2 className="text-sm font-semibold">Rendimiento del cultivo</h2>
+        <InfoTooltip
+          label="Qué significa rendimiento del cultivo"
+          description="Serie histórica de producción expresada en toneladas por hectárea (t/ha)."
+        />
+      </div>
+      <Plot
+        data={traces}
+        layout={layout}
+        config={{ displayModeBar: false, responsive: true }}
+        style={{ width: "100%" }}
+        useResizeHandler
+      />
+    </div>
   );
 }

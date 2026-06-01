@@ -61,8 +61,8 @@ RENDIMIENTO_RANGOS = {
 }
 
 # Umbrales de riesgo
-UMBRAL_RIESGO_ALTO = 0.20   # caída > 20% vs promedio histórico
-UMBRAL_RIESGO_MEDIO = 0.10  # caída > 10%
+UMBRAL_RIESGO_ALTO = 0.15   # caída > 15% vs promedio histórico → Alto
+UMBRAL_RIESGO_MEDIO = 0.07  # caída > 7%  vs promedio histórico → Medio
 
 # Validación temporal
 TRAIN_HASTA = 2021

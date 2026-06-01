@@ -53,6 +53,8 @@ OUTPUT_COLUMNS = {
     "cultivo",
     "prediccion_riesgo",
     "narrativa_riesgo",
+    "rendimiento_esperado",   # nuevo
+    "etiqueta_riesgo",        # nuevo
 }
 
 
@@ -199,6 +201,19 @@ def _validate_narratives(df_output: pd.DataFrame) -> None:
         raise AssertionError(
             f"M4: narrativa con feature cruda detectada en fila {offending_index}: {offending_text}"
         )
+
+    # rendimiento_esperado: float64, no nulo
+    assert pd.api.types.is_float_dtype(df_output["rendimiento_esperado"]), \
+        "M4: rendimiento_esperado debe ser float64"
+    assert df_output["rendimiento_esperado"].notna().all(), \
+        "M4: rendimiento_esperado tiene valores nulos"
+
+    # etiqueta_riesgo: string, valores válidos
+    etiquetas_validas = {"Bajo", "Medio", "Alto"}
+    assert set(df_output["etiqueta_riesgo"].dropna().unique()).issubset(etiquetas_validas), \
+        "M4: etiqueta_riesgo contiene valores fuera de {'Bajo','Medio','Alto'}"
+    assert df_output["etiqueta_riesgo"].notna().all(), \
+        "M4: etiqueta_riesgo tiene valores nulos"
 
 
 def validate_m4() -> None:

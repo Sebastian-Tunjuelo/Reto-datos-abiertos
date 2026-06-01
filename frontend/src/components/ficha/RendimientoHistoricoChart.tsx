@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { SeriePunto } from "@/components/FichaMunicipal";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 // react-plotly.js must be client-only (no SSR)
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
@@ -12,12 +13,18 @@ interface Props {
   municipio: string;
 }
 
-export default function RendimientoHistoricoChart({ serie, cultivo, municipio }: Props) {
+export default function RendimientoHistoricoChart({
+  serie,
+  cultivo,
+  municipio,
+}: Props) {
   if (serie.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-3">Rendimiento histórico</h2>
-        <p className="text-sm text-muted-foreground">Sin histórico disponible.</p>
+        <p className="text-sm text-muted-foreground">
+          Sin histórico disponible.
+        </p>
       </div>
     );
   }
@@ -28,9 +35,19 @@ export default function RendimientoHistoricoChart({ serie, cultivo, municipio }:
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold mb-1">Rendimiento histórico</h2>
-      <p className="text-xs text-muted-foreground mb-3">
+      <div className="flex items-center gap-1.5 mb-1">
+        <h2 className="text-sm font-semibold">Rendimiento histórico</h2>
+        <InfoTooltip
+          label="Qué significa rendimiento histórico"
+          description="Serie de producción por año para el municipio y cultivo seleccionados."
+        />
+      </div>
+      <p className="inline-flex items-center gap-1 text-xs text-muted-foreground mb-3">
         {municipio} · {cultivo} · t/ha por año
+        <InfoTooltip
+          label="Qué significa t/ha por año"
+          description="t/ha significa toneladas por hectárea, y por año indica el valor registrado o estimado en cada temporada."
+        />
       </p>
       <Plot
         data={[
